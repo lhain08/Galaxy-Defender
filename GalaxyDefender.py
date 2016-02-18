@@ -4,6 +4,8 @@ from pygame.locals import *
 
 pygame.init()
 
+clock=pygame.time.Clock()
+
 global coins, totalkills, collateral, doubleh, doublec, perkselector
 
 locked=pygame.image.load('locked.png')
@@ -377,6 +379,8 @@ def Play():
                 pygame.display.quit()
 
         pygame.display.flip()
+        
+        clock.tick(33)
 
         if gameover:
             break
