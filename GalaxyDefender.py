@@ -174,6 +174,7 @@ class explosion():
             if self.num>30:
                 width=100
                 height=100
+                self.rect=enspecks.get_rect()
                 self.rect.centerx=self.x
                 self.rect.centery=self.y
                 screen.blit(enspecks,self.rect)
@@ -181,12 +182,14 @@ class explosion():
                 if self.num>10:
                     width=80
                     height=80
+                    self.rect=expbig.get_rect()
                     self.rect.centerx=self.x
                     self.rect.centery=self.y
                     screen.blit(expbig,self.rect)
                 else:
                     width=45
                     height=45
+                    self.rect=expsmall.get_rect()
                     self.rect.centerx=self.x
                     self.rect.centery=self.y
                     screen.blit(expsmall,self.rect)
