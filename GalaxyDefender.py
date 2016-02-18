@@ -153,8 +153,6 @@ background=pygame.Surface(screen.get_size())
 background=background.convert()
 background.fill(BLACK)
 
-pygame.mixer.music.load('shoot.wav')
-
 def breaker():
     return True
 
@@ -271,7 +269,6 @@ class player():
         if k[pygame.K_SPACE]:
             if self.shootvar:
                 self.shootvar=False
-                pygame.mixer.music.play(-1, 0.0)
                 pbullets.insert(0,playerbullet(self.rect.centerx,self.rect.centery-30))
         else:
             self.shootvar=True
