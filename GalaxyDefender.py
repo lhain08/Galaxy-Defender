@@ -6,6 +6,8 @@ pygame.init()
 
 clock=pygame.time.Clock()
 
+sound=pygame.mixer.Sound('whoosh.wav')
+
 global coins, totalkills, collateral, doubleh, doublec, perkselector
 
 locked=pygame.image.load('locked.png')
@@ -269,6 +271,7 @@ class player():
         if k[pygame.K_SPACE]:
             if self.shootvar:
                 self.shootvar=False
+                sound.play()
                 pbullets.insert(0,playerbullet(self.rect.centerx,self.rect.centery-30))
         else:
             self.shootvar=True
