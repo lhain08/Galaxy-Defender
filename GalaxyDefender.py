@@ -196,12 +196,14 @@ class explosion():
 
 class enemy():
     def __init__(self, x, y, image):
+        self.x=x
         self.rect=pygame.Rect(x-25,y-25,50,50)
         self.image=image
         self.active=True
     def draw(self):
         global health, speed
         self.rect.centery+=speed
+        self.rect.centerx=self.x+(60*math.sin(self.rect.centery/50.0))
         if self.rect.centery>height+25:
             if self.active:
                 health-=10
@@ -286,14 +288,14 @@ class player():
 def spawnEnemies():
     global spawnTimer
     if timeit.default_timer()-spawnTimer>0:
-        enemies.insert(0,enemy(rand(25, width-25),-30, enemyimgs[rand(0,len(enemyimgs)-1)]))
+        enemies.insert(0,enemy(rand(60, width-60),-30, enemyimgs[rand(0,len(enemyimgs)-1)]))
         spawnTimer=timeit.default_timer()+spawnrate
 
 def spawnCoins():
     global cspawnTimer, coinslist
     if timeit.default_timer()-cspawnTimer>0:
         coinslist.insert(0,coinob(-20,rand(0,height/2)))
-        cspawnTimer=timeit.default_timer()+rand(15,25)
+        cspawnTimer=timeit.default_timer()+rand(10,20)
 
 def Results():
     global kills, newcoins, score, totalkills, xp, multiplier
