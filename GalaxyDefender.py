@@ -6,14 +6,14 @@ pygame.init()
 
 clock=pygame.time.Clock()
 
-sound=pygame.mixer.Sound('whoosh.wav')
+sound=pygame.mixer.Sound('Resources/Sound_Effects/shoot.wav')
 
 global coins, totalkills, collateral, doubleh, doublec, perkselector
 
-locked=pygame.image.load('locked.png')
+locked=pygame.image.load('Resources/Images/locked.png')
 locked=pygame.transform.scale(locked,(70,70))
 
-bossimg=pygame.image.load('Boss.PNG')
+bossimg=pygame.image.load('Resources/Images/Boss.PNG')
 bossimg=pygame.transform.scale(bossimg,(100,113))
 
 width=800
@@ -173,12 +173,12 @@ class Achievement():
         screen.blit(self.n,self.npos)
         
 
-ship1=pship(pygame.image.load('PlayerShip1.PNG'), 0, True)
-ship2=pship(pygame.image.load('PlayerShip2.PNG'), 25, False)
-ship3=pship(pygame.image.load('PlayerShip3.PNG'), 50, False)
-ship4=pship(pygame.image.load('PlayerShip4.PNG'), 100, False)
-ship5=pship(pygame.image.load('PlayerShip5.PNG'), 150, False)
-ship6=pship(pygame.image.load('PlayerShip6.PNG'), 200, False)
+ship1=pship(pygame.image.load('Resources/Images/PlayerShip1.PNG'), 0, True)
+ship2=pship(pygame.image.load('Resources/Images/PlayerShip2.PNG'), 25, False)
+ship3=pship(pygame.image.load('Resources/Images/PlayerShip3.PNG'), 50, False)
+ship4=pship(pygame.image.load('Resources/Images/PlayerShip4.PNG'), 100, False)
+ship5=pship(pygame.image.load('Resources/Images/PlayerShip5.PNG'), 150, False)
+ship6=pship(pygame.image.load('Resources/Images/PlayerShip6.PNG'), 200, False)
 
 ships=[ship1,ship2,ship3,ship4,ship5,ship6]
 
@@ -204,9 +204,9 @@ def perk3_init(cx,cy):
     perkselector.centerx=cx
     perkselector.centery=cy
 
-perk1=perks(pygame.image.load('perk1.PNG'),perk1_init,3,'Bullets May Pass Through Multiple Targets')
-perk2=perks(pygame.image.load('perk2.PNG'),perk2_init,5,'Double Health. Does not affect direct hits')
-perk3=perks(pygame.image.load('perk3.PNG'),perk3_init,7,'Coins are worth twice as much')
+perk1=perks(pygame.image.load('Resources/Images/perk1.PNG'),perk1_init,3,'Bullets May Pass Through Multiple Targets')
+perk2=perks(pygame.image.load('Resources/Images/perk2.PNG'),perk2_init,5,'Double Health. Does not affect direct hits')
+perk3=perks(pygame.image.load('Resources/Images/perk3.PNG'),perk3_init,7,'Coins are worth twice as much')
 
 allperks=[perk1,perk2,perk3]
 
@@ -226,7 +226,7 @@ achv8=Achievement('Kill ONE THOUSAND enemies',None,None,None,None,None,1000,30,5
 achievements=[achv1,achv2,achv3,achv4,achv5,achv6,achv7,achv8]
 
 try:
-    f=open('GDstats.pickle')
+    f=open('Saves/GDstats.pickle')
     achv1.achieved,achv2.achieved,achv3.achieved,achv4.achieved,achv5.achieved,achv6.achieved,achv7.achieved,achv8.achieved,xp,totalkills,curship,coins,ship1.purchased,ship2.purchased,ship3.purchased,ship4.purchased,ship5.purchased,ship6.purchased=pickle.load(f)
     f.close()
 except:
@@ -236,18 +236,18 @@ except:
     totalkills=0
     xp=0
 
-enshipimg=pygame.image.load('EnemyShip.PNG')
-enbugimg=pygame.image.load('EnemyBug.PNG')
+enshipimg=pygame.image.load('Resources/Images/EnemyShip.PNG')
+enbugimg=pygame.image.load('Resources/Images/EnemyBug.PNG')
 enemyimgs=[enshipimg,enbugimg]
-expsmall=pygame.image.load('SmallExp.PNG')
-expbig=pygame.image.load('BigExp.PNG')
+expsmall=pygame.image.load('Resources/Images/SmallExp.PNG')
+expbig=pygame.image.load('Resources/Images/BigExp.PNG')
 expbig=pygame.transform.scale(expbig,(75,75))
-enspecks=pygame.image.load('EnemySpecks.PNG')
+enspecks=pygame.image.load('Resources/Images/EnemySpecks.PNG')
 enspecks=pygame.transform.scale(enspecks,(100,100))
 expsmall=pygame.transform.scale(expsmall,(45,45))
-coinimg=pygame.image.load('CoinImage.PNG')
+coinimg=pygame.image.load('Resources/Images/CoinImage.PNG')
 
-version=2
+version=1
 
 screen=pygame.display.set_mode((width, height))
 pygame.display.set_caption('Galaxy Defender V'+str(version))
@@ -694,7 +694,7 @@ def shop():
 
 def Achv_Menu():
     font=pygame.font.Font(None,32)
-    checkmark=pygame.image.load('Checkmark.PNG')
+    checkmark=pygame.image.load('Resources/Images/Checkmark.PNG')
     checkmark=pygame.transform.scale(checkmark,(50,40))
     checkpos=checkmark.get_rect()
     checkpos.centerx=30
@@ -729,7 +729,7 @@ def Achv_Menu():
 
 def save():
     global coins
-    f=open('GDstats.pickle','w')
+    f=open('Saves/GDstats.pickle','w')
     pickle.dump([achv1.achieved,achv2.achieved,achv3.achieved,achv4.achieved,achv5.achieved,achv6.achieved,achv7.achieved,achv8.achieved,xp,totalkills,curship,coins,ship1.purchased,ship2.purchased,ship3.purchased,ship4.purchased,ship5.purchased,ship6.purchased], f)
     f.close()
 
