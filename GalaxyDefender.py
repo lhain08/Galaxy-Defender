@@ -13,6 +13,9 @@ global coins, totalkills, collateral, doubleh, doublec, perkselector
 locked=pygame.image.load('locked.png')
 locked=pygame.transform.scale(locked,(70,70))
 
+bossimg=pygame.image.load('Boss.PNG')
+bossimg=pygame.transform.scale(bossimg,(100,113))
+
 width=800
 height=600
 BLACK=(0,0,0)
@@ -83,6 +86,93 @@ class perks():
         if self.prect.collidepoint(pygame.mouse.get_pos()):
             screen.blit(self.description,self.descrect)
 
+class Achievement():
+    def __init__(self, description, reqkills, reqhealth, reqmulti, reqscore, reqdiff, reqtotalk, rewcoins, rewxp, notice):
+        self.desc=description
+        self.reqkills=reqkills
+        self.reqhealth=reqhealth
+        self.reqmulti=reqmulti
+        self.reqscore=reqscore
+        self.reqdiff=reqdiff
+        self.reqtotalk=reqtotalk
+        self.rewcoins=rewcoins
+        self.rewxp=rewxp
+        self.notice=notice
+        self.achieved=False
+        self.bantime=None
+        font=pygame.font.Font(None, 40)
+        self.a=font.render('Achievement Unlocked!',1,(YELLOW))
+        self.n=font.render(str(self.notice),1,(GREEN))
+        self.apos=self.a.get_rect()
+        self.apos.centerx=width/2
+        self.apos.centery=25
+        self.npos=self.n.get_rect()
+        self.npos.centerx=width/2
+        self.npos.centery=50
+        self.anrect=pygame.Rect.union(self.apos,self.npos)
+    def check(self):
+        global difficulty, kills, score, health, coins, xp
+        if self.bantime:
+            if self.bantime>timeit.default_timer():
+                self.banner()
+            else:
+                self.achieved=True
+        else:
+            if self.cmulti() and self.ckills() and self.cdiff() and self.chealth() and self.ctotalk():
+                self.bantime=timeit.default_timer()+3
+                xp+=self.rewxp
+                coins+=self.rewcoins
+    def ckills(self):
+        global kills
+        if self.reqkills:
+            if self.reqkills<=kills:
+                return True
+            else:
+                return False
+        else:
+            return True
+    def cdiff(self):
+        global difficulty
+        if self.reqdiff:
+            if self.reqdiff==difficulty:
+                return True
+            else:
+                return False
+        else:
+            return True
+    def chealth(self):
+        global health, doubleh
+        if self.reqhealth:
+            if self.reqhealth*(doubleh/100)<=health:
+                return True
+            else:
+                return False
+        else:
+            return True
+    def cmulti(self):
+        if self.reqmulti:
+            for i in pbullets:
+                if i.hits>=self.reqmulti:
+                    return True
+                else:
+                    return False
+        else:
+            return True
+    def ctotalk(self):
+        global totalkills
+        if self.reqtotalk:
+            if self.reqtotalk<=totalkills:
+                return True
+            else:
+                return False
+        else:
+            return True
+    def banner(self):
+        pygame.draw.rect(screen,(155,10,10),self.anrect)
+        screen.blit(self.a,self.apos)
+        screen.blit(self.n,self.npos)
+        
+
 ship1=pship(pygame.image.load('PlayerShip1.PNG'), 0, True)
 ship2=pship(pygame.image.load('PlayerShip2.PNG'), 25, False)
 ship3=pship(pygame.image.load('PlayerShip3.PNG'), 50, False)
@@ -124,9 +214,20 @@ collateral=False
 doubleh=100
 doublec=1
 
+achv1=Achievement('Get ONE kill',None,None,None,None,None,1,5,10,'First Kill')
+achv2=Achievement('Kill TWENTY enemies in one game',20,None,None,None,None,None,5,30,'Killed 20 enemies in one game')
+achv3=Achievement('Kill TWO or more enemies with the same bullet', None,None,2,None,None,None,15,40,'Kill 2 or more enemies with the same bullet')
+achv4=Achievement('Kill FIFTY enemies in one game on EASY without taking damage',50,100,None,None,1,None,10,100,'Killed 50 enemies on Easy without taking damage')
+achv5=Achievement('Kill FOURTY enemies in one game on MEDIUM without taking damage',40,100,None,None,2,None,15,120,'Killed 40 enemies on Medium without taking damage')
+achv6=Achievement('Kill THIRTY enemies in one game on HARD without taking damage',30,100,None,None,3,None,25,150,'Killed 30 enemies on Hard without taking damage')
+achv7=Achievement('Kill FOURTY enemies in one game on HARD without taking damage',40,100,None,None,3,None,30,200,'Killed 40 enemies on Hard without taking damage')
+achv8=Achievement('Kill ONE THOUSAND enemies',None,None,None,None,None,1000,30,500,'1,000th Kill')
+
+achievements=[achv1,achv2,achv3,achv4,achv5,achv6,achv7,achv8]
+
 try:
     f=open('GDstats.pickle')
-    xp,totalkills,curship,coins,ship1.purchased,ship2.purchased,ship3.purchased,ship4.purchased,ship5.purchased,ship6.purchased=pickle.load(f)
+    achv1.achieved,achv2.achieved,achv3.achieved,achv4.achieved,achv5.achieved,achv6.achieved,achv7.achieved,achv8.achieved,xp,totalkills,curship,coins,ship1.purchased,ship2.purchased,ship3.purchased,ship4.purchased,ship5.purchased,ship6.purchased=pickle.load(f)
     f.close()
 except:
     print 'No previous stats'
@@ -211,6 +312,67 @@ class enemy():
         if self.active==True:
             screen.blit(self.image,self.rect)
 
+class Boss():
+    def __init__(self):
+        global difficulty
+        self.img=bossimg
+        self.rect=self.img.get_rect()
+        self.rect.centerx=width/2
+        self.y=float(-60)
+        self.rect.centery=self.y
+        self.shealth=400*difficulty/2
+        self.health=self.shealth
+        self.sheild=False
+        self.sheilds=[]
+        self.intervals=[]
+        for i in range(1,5):
+            self.intervals.append(self.health*i/5)
+    def draw(self):
+        global multiplier,score,xp
+        self.y+=.7
+        self.rect.centery=self.y
+        if self.check_intervals() and not self.sheild:
+            self.intervals.pop()
+            self.sheild=True
+            a=rand(0,360)
+            self.sheilds=[Boss_sheild(a,0),Boss_sheild(a+(6.28/4),1),Boss_sheild(a+3.14,2),Boss_sheild(a-(3.14/2),3)]
+            enemies.insert(0,enemy(width/4,-30, enemyimgs[rand(0,len(enemyimgs)-1)]))
+            enemies.insert(0,enemy(width*3/4,-30, enemyimgs[rand(0,len(enemyimgs)-1)]))
+        if self.sheilds:
+            for i in self.sheilds:
+                i.draw(self.rect.centerx,self.rect.centery)
+        else:
+            self.sheild=False
+        if self.health<=0:
+            bosses.pop()
+            score+=500
+            xp+=30*multiplier
+        thr=pygame.Rect(self.rect.left,self.rect.top-5, self.rect.width,10)
+        hr=pygame.Rect(self.rect.left,self.rect.top-5,(self.rect.width*self.health/self.shealth),10)
+        pygame.draw.rect(screen,(100,100,100),thr)
+        pygame.draw.rect(screen,GREEN,hr)
+        screen.blit(self.img,self.rect)
+    def check_intervals(self):
+        for i in self.intervals:
+            if self.health<i:
+                return True
+
+class Boss_sheild():
+    def __init__(self,deg,lpos):
+        self.deg=deg
+        self.col=(50,150,255)
+        self.lpos=lpos
+        self.radius=10
+        self.rect=pygame.Rect(1000,1000,self.radius*2,self.radius*2)
+    def draw(self,Bx,By):
+        self.deg+=0.08
+        self.x=Bx+(100*(math.cos(float(self.deg))))
+        self.y=By+(100*(math.sin(float(self.deg))))
+        self.rect.centerx=self.x
+        self.rect.centery=self.y
+        pygame.draw.circle(screen,self.col,(int(self.x),int(self.y)),self.radius,0)
+    
+
 class coinob():
     def __init__(self, x, y):
         self.img=pygame.transform.scale(coinimg,(35,35))
@@ -229,8 +391,9 @@ class playerbullet():
     def __init__(self,x,y):
         self.rect=pygame.Rect(x-5,y-15,10,30)
         self.active=True
+        self.hits=0
     def run(self):
-        global spawnrate, score, coins,kills
+        global spawnrate, score, coins,kills,totalkills
         self.rect.centery-=15
         if self.active:
             pygame.draw.rect(screen,(255,255,255),self.rect)
@@ -240,10 +403,12 @@ class playerbullet():
                         self.active=False
                     i.active=False
                     spawnrate=spawnrate*.95
-                    if spawnrate<.1:
+                    if spawnrate<.3:
                         spawnrate=.15
                     score+=100
                     kills+=1
+                    self.hits+=1
+                    totalkills+=1
                     explosions.insert(0,explosion(i.rect.centerx,i.rect.centery))
             for i in coinslist:
                 if self.rect.colliderect(i.rect) and i.active:
@@ -251,6 +416,19 @@ class playerbullet():
                         self.active=False
                     i.active=False
                     coins+=doublec*(int(score/1000)+1)
+            for i in bosses:
+                if i.sheilds:
+                    for x in i.sheilds:
+                        if self.rect.colliderect(x.rect):
+                            i.sheilds.pop(x.lpos)
+                            for a,b in enumerate(i.sheilds):
+                                b.lpos=a
+                            break
+                if self.rect.colliderect(i.rect):
+                    self.active=False
+                    if not i.sheild:
+                        i.health-=20
+                        
         if self.rect.centery<=-15:
             pbullets.pop()
         
@@ -266,11 +444,11 @@ class player():
         global gameover
         k=pygame.key.get_pressed()
         if k[pygame.K_RIGHT]:
-            self.rect.centerx+=14
+            self.rect.centerx+=15
         if self.rect.centerx>width-30:
             self.rect.centerx=width-30
         if k[pygame.K_LEFT]:
-            self.rect.centerx-=14
+            self.rect.centerx-=15
         if self.rect.centerx<30:
             self.rect.centerx=30
         if k[pygame.K_SPACE]:
@@ -284,6 +462,12 @@ class player():
         for i in enemies:
             if self.rect.colliderect(i.rect) and i.active:
                 gameover=True
+        for i in bosses:
+            if self.rect.colliderect(i.rect):
+                gameover=True
+            for x in i.sheilds:
+                if self.rect.colliderect(x.rect):
+                    gameover=True
 
 def spawnEnemies():
     global spawnTimer
@@ -299,7 +483,6 @@ def spawnCoins():
 
 def Results():
     global kills, newcoins, score, totalkills, xp, multiplier
-    totalkills+=kills
     xp+=(kills*multiplier)
     font=pygame.font.SysFont('droidserif', 120)
     st=font.render(str(score),1,(255,0,0))
@@ -333,8 +516,25 @@ def health_bar():
     else:
         gameover=True
 
+def draw_score():
+    global coins, score, coinsicon, cirect
+    font=pygame.font.Font(None,50)
+    st=font.render(str(score),1,(250,250,250))
+    ct=font.render(str(coins),1,YELLOW)
+    stp=st.get_rect()
+    ctp=ct.get_rect()
+    stp.right=width-20
+    ctp.left=50
+    stp.top=20
+    ctp.top=20
+    screen.blit(background,(0,0))
+    screen.blit(coinsicon,cirect)
+    screen.blit(st,stp)
+    screen.blit(ct,ctp)
+
 def Play():
-    global doubleh, health, kills, newcoins, coinslist, cspawnTimer, player1, pbullets, enemies, explosions, spawnrate, spawnTimer, gameover, score
+    global bosses, coinsicon, cirect, doubleh, health, kills, newcoins, coinslist, cspawnTimer, player1, pbullets, enemies, explosions, spawnrate, spawnTimer, gameover, score
+    bosses=[]
     health=doubleh
     kills=0
     newcoins=0
@@ -353,18 +553,7 @@ def Play():
     cirect.top=20
     cirect.left=10
     while True:
-        st=font.render(str(score),1,(250,250,250))
-        ct=font.render(str(coins),1,YELLOW)
-        stp=st.get_rect()
-        ctp=ct.get_rect()
-        stp.right=width-20
-        ctp.left=50
-        stp.top=20
-        ctp.top=20
-        screen.blit(background,(0,0))
-        screen.blit(coinsicon,cirect)
-        screen.blit(st,stp)
-        screen.blit(ct,ctp)
+        draw_score()
         player1.draw()
         spawnEnemies()
         spawnCoins()
@@ -377,7 +566,69 @@ def Play():
         for i in explosions:
             i.draw()
 
+        if score in [1500,5000,10000,20000,30000,40000,50000,60000,70000,80000,90000,100000]:
+            while enemies:
+                draw_score()
+                player1.draw()
+                for i in coinslist:
+                    i.draw()
+                for i in pbullets:
+                    i.run()
+                for i in enemies:
+                    i.draw()
+                for i in explosions:
+                    i.draw()
+                health_bar()
+                for event in pygame.event.get():
+                    if event.type==QUIT:
+                        pygame.display.quit()
+
+                pygame.display.flip()
+                
+                clock.tick(33)
+
+                if gameover:
+                    break
+                for i in achievements:
+                    if not i.achieved:
+                        i.check()
+
+            bosses=[Boss()]
+            while bosses:
+                draw_score()
+                player1.draw()
+                for i in pbullets:
+                    i.run()
+                for i in bosses:
+                    i.draw()
+                for i in enemies:
+                    i.draw()
+                for i in explosions:
+                    i.draw()
+                health_bar()
+                for i in achievements:
+                    if not i.achieved:
+                        i.check()
+                for i in achievements:
+                    if not i.achieved:
+                        i.check()
+
+                for event in pygame.event.get():
+                    if event.type==QUIT:
+                        pygame.display.quit()
+
+                pygame.display.flip()
+                
+                clock.tick(33)
+
+                if gameover:
+                    break
+
         health_bar()
+
+        for i in achievements:
+            if not i.achieved:
+                i.check()
 
         for event in pygame.event.get():
             if event.type==QUIT:
@@ -441,26 +692,64 @@ def shop():
                 sys.exit()
         pygame.display.flip()
 
+def Achv_Menu():
+    font=pygame.font.Font(None,32)
+    checkmark=pygame.image.load('Checkmark.PNG')
+    checkmark=pygame.transform.scale(checkmark,(50,40))
+    checkpos=checkmark.get_rect()
+    checkpos.centerx=30
+    bbut=ButtonMod.button(width-70,height-50,None,'Back',50,BLACK,YELLOW,breaker,screen,pygame)
+    while True:
+        screen.blit(background,(0,0))
+        for i, x in enumerate(achievements):
+            y=height*(i+1)/9
+            if x.achieved:
+                checkpos.centery=y
+                screen.blit(checkmark,checkpos)
+                t=font.render(x.desc,1,(YELLOW))
+            else:
+                t=font.render(x.desc,1,(RED))
+            tpos=t.get_rect()
+            tpos.left=60
+            tpos.centery=y
+            if tpos.width>width-65:
+                tpos.width=width-65
+            screen.blit(t,tpos)
+        x=bbut.draw()
+        if x:
+            break
+        for event in pygame.event.get():
+            if event.type==QUIT:
+                save()
+                pygame.display.quit()
+                sys.exit()
+        pygame.display.flip()
+            
+    
+
 def save():
     global coins
     f=open('GDstats.pickle','w')
-    pickle.dump([xp,totalkills,curship,coins,ship1.purchased,ship2.purchased,ship3.purchased,ship4.purchased,ship5.purchased,ship6.purchased], f)
+    pickle.dump([achv1.achieved,achv2.achieved,achv3.achieved,achv4.achieved,achv5.achieved,achv6.achieved,achv7.achieved,achv8.achieved,xp,totalkills,curship,coins,ship1.purchased,ship2.purchased,ship3.purchased,ship4.purchased,ship5.purchased,ship6.purchased], f)
     f.close()
 
 def seteasy():
-    global speed, multiplier
+    global speed, multiplier, difficulty
+    difficulty=1
     multiplier=1
     speed=4.5
     Play()
 
 def setmed():
-    global speed,multiplier
+    global speed,multiplier, difficulty
+    difficulty=2
     multiplier=2
     speed=6
     Play()
 
 def sethard():
-    global speed, multiplier
+    global speed, multiplier, difficulty
+    difficulty=3
     multiplier=4
     speed=8
     Play()
@@ -493,11 +782,13 @@ def difficultymenu():
 def MainMenu():
     playb=ButtonMod.button(width/2,120, "droidserif",'PLAY',75,BLACK,WHITE,difficultymenu,screen,pygame)
     shopb=ButtonMod.button(width/2,270, "droidserif",'SHOP',60,BLACK,WHITE,shop,screen,pygame)
+    achvb=ButtonMod.button(width/2,420, "droidserif",'Achievements',60,BLACK,WHITE,Achv_Menu,screen,pygame)
     while True:
         screen.blit(background,(0,0))
         draw_Rank()
         playb.draw()
         shopb.draw()
+        achvb.draw()
         for event in pygame.event.get():
             if event.type==QUIT:
                 save()
