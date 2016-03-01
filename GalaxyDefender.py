@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 import pygame, timeit, random, ButtonMod, pickle, sys, math, time
 from random import randint as rand
 from pygame.locals import *
@@ -8,7 +10,7 @@ clock=pygame.time.Clock()
 
 sound=pygame.mixer.Sound('Resources/Sound_Effects/shoot.wav')
 
-global coins, totalkills, collateral, doubleh, doublec, perkselector
+global tbosskills, coins, totalkills, collateral, doubleh, doublec, perkselector
 
 locked=pygame.image.load('Resources/Images/locked.png')
 locked=pygame.transform.scale(locked,(70,70))
@@ -87,7 +89,7 @@ class perks():
             screen.blit(self.description,self.descrect)
 
 class Achievement():
-    def __init__(self, description, reqkills, reqhealth, reqmulti, reqscore, reqdiff, reqtotalk, rewcoins, rewxp, notice):
+    def __init__(self, description, reqkills, reqhealth, reqmulti, reqscore, reqdiff, reqtotalk, reqtbossk, rewcoins, rewxp, notice):
         self.desc=description
         self.reqkills=reqkills
         self.reqhealth=reqhealth
@@ -95,6 +97,7 @@ class Achievement():
         self.reqscore=reqscore
         self.reqdiff=reqdiff
         self.reqtotalk=reqtotalk
+        self.reqtbossk=reqtbossk
         self.rewcoins=rewcoins
         self.rewxp=rewxp
         self.notice=notice
@@ -118,7 +121,7 @@ class Achievement():
             else:
                 self.achieved=True
         else:
-            if self.cmulti() and self.ckills() and self.cdiff() and self.chealth() and self.ctotalk():
+            if self.cmulti() and self.ckills() and self.cdiff() and self.chealth() and self.ctotalk() and self.ctbossk():
                 self.bantime=timeit.default_timer()+3
                 xp+=self.rewxp
                 coins+=self.rewcoins
@@ -162,6 +165,15 @@ class Achievement():
         global totalkills
         if self.reqtotalk:
             if self.reqtotalk<=totalkills:
+                return True
+            else:
+                return False
+        else:
+            return True
+    def ctbossk(self):
+        global tbosskills
+        if self.reqtbossk:
+            if self.reqtbossk<=tbosskills:
                 return True
             else:
                 return False
@@ -214,23 +226,26 @@ collateral=False
 doubleh=100
 doublec=1
 
-achv1=Achievement('Get ONE kill',None,None,None,None,None,1,5,10,'First Kill')
-achv2=Achievement('Kill TWENTY enemies in one game',20,None,None,None,None,None,5,30,'Killed 20 enemies in one game')
-achv3=Achievement('Kill TWO or more enemies with the same bullet', None,None,2,None,None,None,15,40,'Kill 2 or more enemies with the same bullet')
-achv4=Achievement('Kill FIFTY enemies in one game on EASY without taking damage',50,100,None,None,1,None,10,100,'Killed 50 enemies on Easy without taking damage')
-achv5=Achievement('Kill FOURTY enemies in one game on MEDIUM without taking damage',40,100,None,None,2,None,15,120,'Killed 40 enemies on Medium without taking damage')
-achv6=Achievement('Kill THIRTY enemies in one game on HARD without taking damage',30,100,None,None,3,None,25,150,'Killed 30 enemies on Hard without taking damage')
-achv7=Achievement('Kill FOURTY enemies in one game on HARD without taking damage',40,100,None,None,3,None,30,200,'Killed 40 enemies on Hard without taking damage')
-achv8=Achievement('Kill ONE THOUSAND enemies',None,None,None,None,None,1000,30,500,'1,000th Kill')
+achv1=Achievement('Get ONE kill',None,None,None,None,None,1,None,5,10,'First Kill')
+achv2=Achievement('Kill One Boss',None,None,None,None,None,None,1,6,15,'First Boss Kill')
+achv3=Achievement('Kill TWENTY enemies in one game',20,None,None,None,None,None,None,5,30,'Killed 20 enemies in one game')
+achv4=Achievement('Kill TWO or more enemies with the same bullet', None,None,2,None,None,None,None,15,40,'Kill 2 or more enemies with the same bullet')
+achv5=Achievement('Kill FIFTY enemies in one game on EASY without taking damage',50,100,None,None,1,None,None,10,100,'Killed 50 enemies on Easy without taking damage')
+achv6=Achievement('Kill FOURTY enemies in one game on MEDIUM without taking damage',40,100,None,None,2,None,None,15,120,'Killed 40 enemies on Medium without taking damage')
+achv7=Achievement('Kill THIRTY enemies in one game on HARD without taking damage',30,100,None,None,3,None,None,25,150,'Killed 30 enemies on Hard without taking damage')
+achv8=Achievement('Kill FOURTY enemies in one game on HARD without taking damage',40,100,None,None,3,None,None,30,200,'Killed 40 enemies on Hard without taking damage')
+achv9=Achievement('Kill ONE THOUSAND enemies',None,None,None,None,None,1000,None,30,500,'1,000th Kill')
+achv10=Achievement('Kill TEN THOUSAND enemies',None,None,None,None,None,10000,None,75,1000,'10,000th Kill')
 
-achievements=[achv1,achv2,achv3,achv4,achv5,achv6,achv7,achv8]
+achievements=[achv1,achv2,achv3,achv4,achv5,achv6,achv7,achv8,achv9,achv10]
 
 try:
     f=open('Saves/GDstats.pickle')
-    achv1.achieved,achv2.achieved,achv3.achieved,achv4.achieved,achv5.achieved,achv6.achieved,achv7.achieved,achv8.achieved,xp,totalkills,curship,coins,ship1.purchased,ship2.purchased,ship3.purchased,ship4.purchased,ship5.purchased,ship6.purchased=pickle.load(f)
+    tbosskills,achv1.achieved,achv2.achieved,achv3.achieved,achv4.achieved,achv5.achieved,achv6.achieved,achv7.achieved,achv8.achieved,achv9.achieved,achv10.achieved,xp,totalkills,curship,coins,ship1.purchased,ship2.purchased,ship3.purchased,ship4.purchased,ship5.purchased,ship6.purchased=pickle.load(f)
     f.close()
 except:
     print 'No previous stats'
+    tbosskills=0
     coins=0
     curship=0
     totalkills=0
@@ -328,7 +343,7 @@ class Boss():
         for i in range(1,5):
             self.intervals.append(self.health*i/5)
     def draw(self):
-        global multiplier,score,xp
+        global multiplier,score,xp,tbosskills
         self.y+=.7
         self.rect.centery=self.y
         if self.check_intervals() and not self.sheild:
@@ -347,6 +362,7 @@ class Boss():
             bosses.pop()
             score+=500
             xp+=30*multiplier
+            tbosskills+=1
         thr=pygame.Rect(self.rect.left,self.rect.top-5, self.rect.width,10)
         hr=pygame.Rect(self.rect.left,self.rect.top-5,(self.rect.width*self.health/self.shealth),10)
         pygame.draw.rect(screen,(100,100,100),thr)
@@ -693,6 +709,7 @@ def shop():
         pygame.display.flip()
 
 def Achv_Menu():
+    yshift=0
     font=pygame.font.Font(None,32)
     checkmark=pygame.image.load('Resources/Images/Checkmark.PNG')
     checkmark=pygame.transform.scale(checkmark,(50,40))
@@ -702,7 +719,7 @@ def Achv_Menu():
     while True:
         screen.blit(background,(0,0))
         for i, x in enumerate(achievements):
-            y=height*(i+1)/9
+            y=height*(i+1)/9-(yshift*height/9)
             if x.achieved:
                 checkpos.centery=y
                 screen.blit(checkmark,checkpos)
@@ -723,14 +740,57 @@ def Achv_Menu():
                 save()
                 pygame.display.quit()
                 sys.exit()
+            if event.type==KEYDOWN:
+                if event.key==K_DOWN:
+                    yshift+=1
+                if event.key==K_UP:
+                    yshift-=1
+                if yshift<0:
+                    yshift=0
+                if yshift>len(achievements)-8:
+                    yshift=len(achievements)-8
         pygame.display.flip()
-            
-    
+
+def Stats_Menu():
+    screen.blit(background,(0,0))
+    global totalkills,tbosskills
+    bbut=ButtonMod.button(width-70,height-50,None,'Back',50,BLACK,YELLOW,breaker,screen,pygame)
+    font=pygame.font.Font(None,70)
+    tkt=font.render('Total Kills: ',1,RED)
+    tktp=tkt.get_rect()
+    tktp.left=width/4
+    tktp.centery=200
+    tk=font.render(str(totalkills),1,GREEN)
+    tkp=tk.get_rect()
+    tkp.left=tktp.right
+    tkp.centery=tktp.centery
+    tbkt=font.render('Total Boss Kills: ',1,RED)
+    tbktp=tbkt.get_rect()
+    tbktp.left=width/4
+    tbktp.centery=400
+    tbk=font.render(str(tbosskills),1,GREEN)
+    tbkp=tbk.get_rect()
+    tbkp.left=tbktp.right
+    tbkp.centery=400
+    screen.blit(tkt,tktp)
+    screen.blit(tk,tkp)
+    screen.blit(tbkt,tbktp)
+    screen.blit(tbk,tbkp)
+    while True:
+        x=bbut.draw()
+        if x:
+            break
+        for event in pygame.event.get():
+            if event.type==QUIT:
+                save()
+                pygame.display.quit()
+                sys.exit()
+        pygame.display.flip()
 
 def save():
     global coins
     f=open('Saves/GDstats.pickle','w')
-    pickle.dump([achv1.achieved,achv2.achieved,achv3.achieved,achv4.achieved,achv5.achieved,achv6.achieved,achv7.achieved,achv8.achieved,xp,totalkills,curship,coins,ship1.purchased,ship2.purchased,ship3.purchased,ship4.purchased,ship5.purchased,ship6.purchased], f)
+    pickle.dump([tbosskills,achv1.achieved,achv2.achieved,achv3.achieved,achv4.achieved,achv5.achieved,achv6.achieved,achv7.achieved,achv8.achieved,achv9.achieved,achv10.achieved,xp,totalkills,curship,coins,ship1.purchased,ship2.purchased,ship3.purchased,ship4.purchased,ship5.purchased,ship6.purchased], f)
     f.close()
 
 def seteasy():
@@ -781,14 +841,16 @@ def difficultymenu():
 
 def MainMenu():
     playb=ButtonMod.button(width/2,120, "droidserif",'PLAY',75,BLACK,WHITE,difficultymenu,screen,pygame)
-    shopb=ButtonMod.button(width/2,270, "droidserif",'SHOP',60,BLACK,WHITE,shop,screen,pygame)
-    achvb=ButtonMod.button(width/2,420, "droidserif",'Achievements',60,BLACK,WHITE,Achv_Menu,screen,pygame)
+    shopb=ButtonMod.button(width/2,250, "droidserif",'SHOP',60,BLACK,WHITE,shop,screen,pygame)
+    achvb=ButtonMod.button(width/2,380, "droidserif",'Achievements',60,BLACK,WHITE,Achv_Menu,screen,pygame)
+    statb=ButtonMod.button(width/2,510, "droidserif",'Statistics',60,BLACK,WHITE,Stats_Menu,screen,pygame)
     while True:
         screen.blit(background,(0,0))
         draw_Rank()
         playb.draw()
         shopb.draw()
         achvb.draw()
+        statb.draw()
         for event in pygame.event.get():
             if event.type==QUIT:
                 save()
