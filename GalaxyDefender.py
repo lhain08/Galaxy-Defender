@@ -237,19 +237,20 @@ achv8=Achievement('Kill FOURTY enemies in one game on HARD without taking damage
 achv9=Achievement('Kill ONE THOUSAND enemies',None,None,None,None,None,1000,None,30,500,'1,000th Kill')
 achv10=Achievement('Kill TEN THOUSAND enemies',None,None,None,None,None,10000,None,75,1000,'10,000th Kill')
 
-achievements=[achv1,achv2,achv3,achv4,achv5,achv6,achv7,achv8,achv9,achv10]
-
+achievements = [achv1, achv2, achv3, achv4, achv5, achv6, achv7, achv8, achv9, achv10]
+global highscore
 try:
     f=open('Saves/GDstats.pickle')
-    tbosskills,achv1.achieved,achv2.achieved,achv3.achieved,achv4.achieved,achv5.achieved,achv6.achieved,achv7.achieved,achv8.achieved,achv9.achieved,achv10.achieved,xp,totalkills,curship,coins,ship1.purchased,ship2.purchased,ship3.purchased,ship4.purchased,ship5.purchased,ship6.purchased=pickle.load(f)
+    tbosskills, achv1.achieved, achv2.achieved, achv3.achieved, achv4.achieved, achv5.achieved, achv6.achieved, achv7.achieved, achv8.achieved, achv9.achieved, achv10.achieved, xp, totalkills, curship, coins, ship1.purchased, ship2.purchased, ship3.purchased, ship4.purchased, ship5.purchased, ship6.purchased, highscore = pickle.load(f)
     f.close()
 except:
     print 'No previous stats'
-    tbosskills=0
-    coins=0
-    curship=0
-    totalkills=0
-    xp=0
+    tbosskills = 0
+    coins = 0
+    curship = 0
+    totalkills = 0
+    xp = 0
+    highscore = [0, 0, 0]
 
 enshipimg=pygame.image.load('Resources/Images/EnemyShip.PNG')
 enbugimg=pygame.image.load('Resources/Images/EnemyBug.PNG')
@@ -498,15 +499,30 @@ def spawnCoins():
         cspawnTimer=timeit.default_timer()+rand(10,20)
 
 def Results():
-    global kills, newcoins, score, totalkills, xp, multiplier
+    global kills, newcoins, score, totalkills, xp, multiplier, highscore
+    newhs = False
+    if score > highscore[difficulty - 1]:
+        highscore[difficulty - 1] = score
+        newhs = True
     xp+=(kills*multiplier)
     font=pygame.font.SysFont('droidserif', 120)
-    st=font.render(str(score),1,(255,0,0))
+    stcolor = RED
+    if newhs:
+        stcolor = (0,255,0)
+    st=font.render(str(score),1,stcolor)
     stp=st.get_rect()
     stp.centerx=width/2
     stp.bottom=height/2
     screen.blit(background,(0,0))
     screen.blit(st,stp)
+    if newhs:
+        font = pygame.font.SysFont("droidserif", 30)
+        nhst = font.render("NEW HIGHSCORE!",1,RED)
+        nhst = pygame.transform.rotate(nhst,-40)
+        nhsrect = nhst.get_rect()
+        nhsrect.centerx = stp.right
+        nhsrect.centery = stp.top
+        screen.blit(nhst,nhsrect)
     font=pygame.font.SysFont('droidserif',50)
     kt=font.render(('Kills: '+str(kills)),1,(255,255,255))
     ktp=kt.get_rect()
@@ -790,7 +806,7 @@ def Stats_Menu():
 def save():
     global coins
     f=open('Saves/GDstats.pickle','w')
-    pickle.dump([tbosskills,achv1.achieved,achv2.achieved,achv3.achieved,achv4.achieved,achv5.achieved,achv6.achieved,achv7.achieved,achv8.achieved,achv9.achieved,achv10.achieved,xp,totalkills,curship,coins,ship1.purchased,ship2.purchased,ship3.purchased,ship4.purchased,ship5.purchased,ship6.purchased], f)
+    pickle.dump([tbosskills,achv1.achieved,achv2.achieved,achv3.achieved,achv4.achieved,achv5.achieved,achv6.achieved,achv7.achieved,achv8.achieved,achv9.achieved,achv10.achieved,xp,totalkills,curship,coins,ship1.purchased,ship2.purchased,ship3.purchased,ship4.purchased,ship5.purchased,ship6.purchased, highscore], f)
     f.close()
 
 def seteasy():
@@ -859,7 +875,35 @@ def MainMenu():
 
         pygame.display.flip()
 
+def OpenAnimation():
+    fsize = 0
+    angle = 0
+    alpha = pygame.Surface((width, height))
+    while angle<360:
+        fsize += 6
+        angle += 20
+        alpha.blit(background,(0,0))
+        font = pygame.font.SysFont("droidserif",int(fsize))
+        gtext = font.render("GALAXY DEFENDER", 1, RED)
+        gtext = pygame.transform.rotate(gtext, angle)
+        gpos = gtext.get_rect()
+        gpos.centerx = width/2
+        gpos.centery = height/2
+        alpha.blit(gtext,gpos)
+        screen.blit(alpha, (0,0))
+        pygame.display.flip()
+    time.sleep(2)
+    a = 252
+    while a > 0:
+        a -= 9
+        alpha.set_alpha(a)
+        screen.blit(background,(0,0))
+        screen.blit(alpha,(0,0))
+        pygame.display.flip()
 
+
+
+OpenAnimation()
 MainMenu()
 
 
