@@ -18,6 +18,8 @@ locked=pygame.transform.scale(locked,(70,70))
 bossimg=pygame.image.load('Resources/Images/Boss.PNG')
 bossimg=pygame.transform.scale(bossimg,(100,113))
 
+shield = pygame.image.load('Resources/Images/Shield.png')
+
 width=800
 height=600
 BLACK=(0,0,0)
@@ -25,7 +27,13 @@ WHITE=(255,255,255)
 RED=(255,0,0)
 YELLOW=(255,225,0)
 GREEN=(0,255,0)
-perkselector=pygame.Rect(-100,-100,90,90)
+
+class preferences():
+    def __init__(self, perk, sens):
+        self.perk = perk
+        self.sens = sens
+
+plPref = preferences(0,100)
 
 class pship():
     def __init__(self, image, price, purchased):
@@ -71,7 +79,7 @@ class perks():
     def draw(self, x):
         global rank, curperk
         font=pygame.font.Font(None,30)
-        self.prect.centerx=(width*((x+1)/4.0))
+        self.prect.centerx=(width*((x+1)/float(len(allperks)+1)))
         self.prect.centery=height*3/4
         screen.blit(self.icon,self.prect)
         if not rank>=self.reqrank:
@@ -194,6 +202,13 @@ ship6=pship(pygame.image.load('Resources/Images/PlayerShip6.PNG'), 200, False)
 
 ships=[ship1,ship2,ship3,ship4,ship5,ship6]
 
+def No_perk(cx, cy):
+    global collateral, doublec, doubleh, perkselector
+    collateral = False
+    doublec = 1
+    doubleh = 100
+    perkselector.centerx = cx
+    perkselector.centery = cy
 def perk1_init(cx,cy):
     global collateral, doublec, doubleh, perkselector
     collateral=True
@@ -216,15 +231,20 @@ def perk3_init(cx,cy):
     perkselector.centerx=cx
     perkselector.centery=cy
 
+noPerk=perks(pygame.image.load('Resources/Images/EmptyIcon.png'),No_perk,0,'No Perks')
 perk1=perks(pygame.image.load('Resources/Images/perk1.PNG'),perk1_init,3,'Bullets May Pass Through Multiple Targets')
 perk2=perks(pygame.image.load('Resources/Images/perk2.PNG'),perk2_init,5,'Double Health. Does not affect direct hits')
 perk3=perks(pygame.image.load('Resources/Images/perk3.PNG'),perk3_init,7,'Coins are worth twice as much')
 
-allperks=[perk1,perk2,perk3]
+allperks=[noPerk,perk1,perk2,perk3]
 
 collateral=False
 doubleh=100
 doublec=1
+
+perkselector=pygame.Rect((0,0,90,90))
+perkselector.centerx = width*(1.0/(len(allperks)+1))
+perkselector.centery = height*3/4
 
 achv1=Achievement('Get ONE kill',None,None,None,None,None,1,None,5,10,'First Kill')
 achv2=Achievement('Kill One Boss',None,None,None,None,None,None,1,6,15,'First Boss Kill')
@@ -285,10 +305,10 @@ class explosion():
         self.rect.centery=y
     def draw(self):
         self.num+=1
-        if self.num>50:
+        if self.num>10:
             explosions.pop()
         else:
-            if self.num>30:
+            if self.num>7:
                 width=100
                 height=100
                 self.rect=enspecks.get_rect()
@@ -296,7 +316,7 @@ class explosion():
                 self.rect.centery=self.y
                 screen.blit(enspecks,self.rect)
             else:
-                if self.num>10:
+                if self.num>4:
                     width=80
                     height=80
                     self.rect=expbig.get_rect()
@@ -312,11 +332,14 @@ class explosion():
                     screen.blit(expsmall,self.rect)
 
 class enemy():
-    def __init__(self, x, y, image):
+    def __init__(self, x, y, image, mhealth):
         self.x=x
         self.rect=pygame.Rect(x-25,y-25,50,50)
         self.image=image
+        self.rect = self.image.get_rect()
         self.active=True
+        self.maxhealth = mhealth
+        self.shealth = mhealth
     def draw(self):
         global health, speed
         self.rect.centery+=speed
@@ -326,6 +349,9 @@ class enemy():
                 health-=10
             enemies.pop()
         if self.active==True:
+            if not self.maxhealth == self.shealth:
+                pygame.draw.rect(screen,(175,175,175),(self.rect.centerx - 30, self.rect.top - 20, 60, 6))
+                pygame.draw.rect(screen,RED,(self.rect.centerx - 30, self.rect.top - 20, 60 * (float(self.shealth)/float(self.maxhealth)), 6))
             screen.blit(self.image,self.rect)
 
 class Boss():
@@ -339,12 +365,14 @@ class Boss():
         self.shealth=400*difficulty/2
         self.health=self.shealth
         self.sheild=False
+        self.shieldimg = pygame.transform.scale(shield,(self.rect.height + 25, self.rect.height + 25))
+        self.shieldrect = self.shieldimg.get_rect()
         self.sheilds=[]
         self.intervals=[]
         for i in range(1,5):
             self.intervals.append(self.health*i/5)
     def draw(self):
-        global multiplier,score,xp,tbosskills
+        global multiplier,score,xp,tbosskills,gameover
         self.y+=.7
         self.rect.centery=self.y
         if self.check_intervals() and not self.sheild:
@@ -352,9 +380,14 @@ class Boss():
             self.sheild=True
             a=rand(0,360)
             self.sheilds=[Boss_sheild(a,0),Boss_sheild(a+(6.28/4),1),Boss_sheild(a+3.14,2),Boss_sheild(a-(3.14/2),3)]
-            enemies.insert(0,enemy(width/4,-30, enemyimgs[rand(0,len(enemyimgs)-1)]))
-            enemies.insert(0,enemy(width*3/4,-30, enemyimgs[rand(0,len(enemyimgs)-1)]))
+            enhealth = score / 1000
+            enhealth = (enhealth + 1) * 10
+            enemies.insert(0,enemy(width/4,-30, enemyimgs[rand(0,len(enemyimgs)-1)], enhealth))
+            enemies.insert(0,enemy(width*3/4,-30, enemyimgs[rand(0,len(enemyimgs)-1)], enhealth))
         if self.sheilds:
+            self.shieldrect.centerx = self.rect.centerx
+            self.shieldrect.centery = self.rect.centery - 5
+            screen.blit(self.shieldimg,self.shieldrect)
             for i in self.sheilds:
                 i.draw(self.rect.centerx,self.rect.centery)
         else:
@@ -369,6 +402,8 @@ class Boss():
         pygame.draw.rect(screen,(100,100,100),thr)
         pygame.draw.rect(screen,GREEN,hr)
         screen.blit(self.img,self.rect)
+        if self.rect.centerx > height:
+            gameover = True
     def check_intervals(self):
         for i in self.intervals:
             if self.health<i:
@@ -409,24 +444,32 @@ class playerbullet():
         self.rect=pygame.Rect(x-5,y-15,10,30)
         self.active=True
         self.hits=0
+        self.speed = 20
+        self.hitenemies = []
+        self.damage = 10
     def run(self):
         global spawnrate, score, coins,kills,totalkills
-        self.rect.centery-=15
+        self.rect.centery-=self.speed
         if self.active:
             pygame.draw.rect(screen,(255,255,255),self.rect)
             for i in enemies:
-                if self.rect.colliderect(i.rect) and i.active:
-                    if not collateral:
-                        self.active=False
-                    i.active=False
-                    spawnrate=spawnrate*.95
-                    if spawnrate<.3:
-                        spawnrate=.15
-                    score+=100
-                    kills+=1
-                    self.hits+=1
-                    totalkills+=1
-                    explosions.insert(0,explosion(i.rect.centerx,i.rect.centery))
+                if not i in self.hitenemies:
+                    if self.rect.colliderect(i.rect) and i.active:
+                        if not collateral:
+                            self.active=False
+                        else:
+                            self.hitenemies.append(i)
+                        i.shealth -= self.damage
+                        if i.shealth<=0:
+                            i.active=False
+                            explosions.insert(0,explosion(i.rect.centerx,i.rect.centery))
+                        spawnrate=spawnrate*.95
+                        if spawnrate<.3:
+                            spawnrate=.15
+                        score+=100
+                        kills+=1
+                        self.hits+=1
+                        totalkills+=1
             for i in coinslist:
                 if self.rect.colliderect(i.rect) and i.active:
                     if not collateral:
@@ -457,15 +500,16 @@ class player():
         self.rect.centerx=x
         self.rect.centery=y
         self.shootvar=True
+        self.speed = 17
     def draw(self):
         global gameover
         k=pygame.key.get_pressed()
         if k[pygame.K_RIGHT]:
-            self.rect.centerx+=15
+            self.rect.centerx+=self.speed*plPref.sens/100
         if self.rect.centerx>width-30:
             self.rect.centerx=width-30
         if k[pygame.K_LEFT]:
-            self.rect.centerx-=15
+            self.rect.centerx-=self.speed*plPref.sens/100
         if self.rect.centerx<30:
             self.rect.centerx=30
         if k[pygame.K_SPACE]:
@@ -487,16 +531,20 @@ class player():
                     gameover=True
 
 def spawnEnemies():
-    global spawnTimer
+    global spawnTimer, spawnrate, score
+    if spawnrate<.6:
+        spawnrate = .6
+    enhealth = score/1000
+    enhealth = (enhealth + 1) * 10
     if timeit.default_timer()-spawnTimer>0:
-        enemies.insert(0,enemy(rand(60, width-60),-30, enemyimgs[rand(0,len(enemyimgs)-1)]))
+        enemies.insert(0,enemy(rand(60, width-60),-50, enemyimgs[rand(0,len(enemyimgs)-1)], enhealth))
         spawnTimer=timeit.default_timer()+spawnrate
 
 def spawnCoins():
     global cspawnTimer, coinslist
     if timeit.default_timer()-cspawnTimer>0:
         coinslist.insert(0,coinob(-20,rand(0,height/2)))
-        cspawnTimer=timeit.default_timer()+rand(10,20)
+        cspawnTimer=timeit.default_timer()+rand(7,15)
 
 def Results():
     global kills, newcoins, score, totalkills, xp, multiplier, highscore
@@ -505,7 +553,7 @@ def Results():
         highscore[difficulty - 1] = score
         newhs = True
     xp+=(kills*multiplier)
-    font=pygame.font.SysFont('droidserif', 120)
+    font=pygame.font.SysFont('droidserif', 120,bold = True, italic = True)
     stcolor = RED
     if newhs:
         stcolor = (0,255,0)
@@ -564,8 +612,72 @@ def draw_score():
     screen.blit(st,stp)
     screen.blit(ct,ctp)
 
+def Paused():
+    global escVar
+    escVar = False
+    while True:
+        draw_score()
+
+        font = pygame.font.SysFont("droidserif", 75, bold=True)
+        pt = font.render("PAUSED",1,RED)
+        ptpos = pt.get_rect()
+        ptpos.centerx = width/2
+        ptpos.centery = 40
+        screen.blit(pt, ptpos)
+
+        font = pygame.font.SysFont("droidserif", 50)
+        senst = font.render("Sensitivity",1,GREEN)
+        senstpos = senst.get_rect()
+        senstpos.left = 30
+        senstpos.centery = 100
+        screen.blit(senst, senstpos)
+
+        k = pygame.key.get_pressed()
+
+        if k[K_ESCAPE] and escVar:
+            escVar = False
+            break
+        elif not k[K_ESCAPE]:
+            escVar = True
+
+        sliderect = pygame.Rect(((2*plPref.sens)+20,132.5,20,20))
+        pygame.draw.rect(screen,BLACK,(10,125,250,40))
+        pygame.draw.rect(screen, WHITE, (30, 138, 200, 9))
+        pygame.draw.rect(screen, WHITE, (15, 130, 15, 25))
+        pygame.draw.rect(screen, WHITE, (230, 130, 15, 25))
+        pygame.draw.rect(screen, RED, sliderect)
+        if pygame.mouse.get_pressed()[0]:
+            if sliderect.collidepoint(pygame.mouse.get_pos()):
+                while pygame.mouse.get_pressed()[0]:
+                    x, y = pygame.mouse.get_pos()
+                    sliderect.centerx = x
+                    if sliderect.centerx>230:
+                        sliderect.centerx = 230
+                    elif sliderect.centerx < 30:
+                        sliderect.centerx = 30
+
+                    pygame.draw.rect(screen, BLACK, (10, 125, 250, 40))
+                    pygame.draw.rect(screen, WHITE, (30, 138, 200, 9))
+                    pygame.draw.rect(screen, WHITE, (15, 130, 15, 25))
+                    pygame.draw.rect(screen, WHITE, (230, 130, 15, 25))
+                    pygame.draw.rect(screen, RED, sliderect)
+                    pygame.display.flip()
+
+                    for i in pygame.event.get():
+                        if i.type == QUIT:
+                            pygame.display.quit()
+                            quit()
+                plPref.sens = (sliderect.centerx - 30)/2
+
+        pygame.display.flip()
+
+        for i in pygame.event.get():
+            if i.type == QUIT:
+                pygame.display.quit()
+                quit()
+
 def Play():
-    global bosses, coinsicon, cirect, doubleh, health, kills, newcoins, coinslist, cspawnTimer, player1, pbullets, enemies, explosions, spawnrate, spawnTimer, gameover, score
+    global escVar, bosses, coinsicon, cirect, doubleh, health, kills, newcoins, coinslist, cspawnTimer, player1, pbullets, enemies, explosions, spawnrate, spawnTimer, gameover, score
     bosses=[]
     health=doubleh
     kills=0
@@ -584,6 +696,7 @@ def Play():
     cirect=coinsicon.get_rect()
     cirect.top=20
     cirect.left=10
+    escVar = False
     while True:
         draw_score()
         player1.draw()
@@ -597,6 +710,12 @@ def Play():
             i.draw()
         for i in explosions:
             i.draw()
+
+        k = pygame.key.get_pressed()
+        if k[K_ESCAPE] and escVar:
+            Paused()
+        elif not k[K_ESCAPE]:
+            escVar = True
 
         if score in [1500,5000,10000,20000,30000,40000,50000,60000,70000,80000,90000,100000]:
             while enemies:
@@ -880,10 +999,10 @@ def OpenAnimation():
     angle = 0
     alpha = pygame.Surface((width, height))
     while angle<360:
-        fsize += 6
+        fsize += 5.5
         angle += 20
         alpha.blit(background,(0,0))
-        font = pygame.font.SysFont("droidserif",int(fsize))
+        font = pygame.font.SysFont("droidserif",int(fsize),bold = True, italic = True)
         gtext = font.render("GALAXY DEFENDER", 1, RED)
         gtext = pygame.transform.rotate(gtext, angle)
         gpos = gtext.get_rect()
