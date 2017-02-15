@@ -86,7 +86,7 @@ class perks():
             screen.blit(locked,self.prect)
             t=font.render('Rank: '+str(self.reqrank),1,GREEN)
             tp=t.get_rect()
-            tp.centerx=(width*((x+1)/4.0))
+            tp.centerx=self.prect.centerx
             tp.centery=height*3/4-60
             screen.blit(t,tp)
         
