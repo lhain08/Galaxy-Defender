@@ -313,7 +313,7 @@ enspecks=pygame.transform.scale(enspecks,(100,100))
 expsmall=pygame.transform.scale(expsmall,(45,45))
 coinimg=pygame.image.load('Resources/Images/CoinImage.PNG')
 
-version=2.1
+version=3.0
 
 screen=pygame.display.set_mode((width, height))
 pygame.display.set_caption('Galaxy Defender V'+str(version))
