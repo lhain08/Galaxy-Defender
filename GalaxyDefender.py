@@ -9,6 +9,7 @@ pygame.init()
 clock=pygame.time.Clock()
 
 sound=pygame.mixer.Sound('Resources/Sound_Effects/shoot.wav')
+GOsound = pygame.mixer.Sound('Resources/Sound_Effects/GameOver.wav')
 
 global tbosskills, coins, totalkills, collateral, doubleh, doublec, perkselector
 
@@ -17,6 +18,9 @@ locked=pygame.transform.scale(locked,(70,70))
 
 bossimg=pygame.image.load('Resources/Images/Boss.PNG')
 bossimg=pygame.transform.scale(bossimg,(100,113))
+
+arrow = pygame.image.load('Resources/Images/arrow.png')
+arrow = pygame.transform.scale(arrow, (30,30))
 
 shield = pygame.image.load('Resources/Images/Shield.png')
 
@@ -27,6 +31,8 @@ WHITE=(255,255,255)
 RED=(255,0,0)
 YELLOW=(255,225,0)
 GREEN=(0,255,0)
+PURPLE=(200,0,200)
+BLUE=(0,0,200)
 
 class preferences():
     def __init__(self, perk, sens):
@@ -36,15 +42,18 @@ class preferences():
 plPref = preferences(0,100)
 
 class pship():
-    def __init__(self, image, price, purchased):
+    def __init__(self, image, price, purchased, damage, cooldown, movespeed):
         self.image=pygame.transform.scale(image, (75,75))
         self.price=price
         self.purchased=purchased
         self.srect=self.image.get_rect()
+        self.damage = damage
+        self.cooldown = cooldown
+        self.movespeed = movespeed
     def draw(self,x):
         global coins, curship
-        font=pygame.font.Font(None,30)
-        self.srect.centerx=(width*((x+1)/7.0))
+        font=pygame.font.Font(None,25)
+        self.srect.centerx=(width*((x+1)/float(len(ships)+1)))
         self.srect.centery=height/4
         if curship==x:
             pygame.draw.rect(screen,(100,0,0),self.srect)
@@ -53,7 +62,7 @@ class pship():
             screen.blit(locked,self.srect)
             t=font.render('Price: '+str(self.price),1,YELLOW)
             tp=t.get_rect()
-            tp.centerx=(width*((x+1)/7.0))
+            tp.centerx=self.srect.centerx
             tp.centery=height/4-60
             screen.blit(t,tp)
         a,b,c=pygame.mouse.get_pressed()
@@ -66,7 +75,7 @@ class pship():
                 curship=x
 
 class perks():
-    def __init__(self, icon, function, reqrank, description):
+    def __init__(self, icon, function, reqrank, description, x):
         font=pygame.font.Font(None,50)
         self.icon=pygame.transform.scale(icon,(75,75))
         self.function=function
@@ -76,11 +85,11 @@ class perks():
         self.descrect.centerx=width/2
         self.descrect.centery=height-40
         self.prect=(self.icon.get_rect())
+        self.prect.centerx=(width*((x+1)/float(5)))
+        self.prect.centery=height*3/4
     def draw(self, x):
         global rank, curperk
         font=pygame.font.Font(None,30)
-        self.prect.centerx=(width*((x+1)/float(len(allperks)+1)))
-        self.prect.centery=height*3/4
         screen.blit(self.icon,self.prect)
         if not rank>=self.reqrank:
             screen.blit(locked,self.prect)
@@ -129,10 +138,19 @@ class Achievement():
             else:
                 self.achieved=True
         else:
-            if self.cmulti() and self.ckills() and self.cdiff() and self.chealth() and self.ctotalk() and self.ctbossk():
+            if self.cscore() and self.cmulti() and self.ckills() and self.cdiff() and self.chealth() and self.ctotalk() and self.ctbossk():
                 self.bantime=timeit.default_timer()+3
                 xp+=self.rewxp
                 coins+=self.rewcoins
+    def cscore(self):
+        global score
+        if self.reqscore:
+            if self.reqscore<=score:
+                return True
+            else:
+                return False
+        else:
+            return True
     def ckills(self):
         global kills
         if self.reqkills:
@@ -193,58 +211,57 @@ class Achievement():
         screen.blit(self.n,self.npos)
         
 
-ship1=pship(pygame.image.load('Resources/Images/PlayerShip1.PNG'), 0, True)
-ship2=pship(pygame.image.load('Resources/Images/PlayerShip2.PNG'), 25, False)
-ship3=pship(pygame.image.load('Resources/Images/PlayerShip3.PNG'), 50, False)
-ship4=pship(pygame.image.load('Resources/Images/PlayerShip4.PNG'), 100, False)
-ship5=pship(pygame.image.load('Resources/Images/PlayerShip5.PNG'), 150, False)
-ship6=pship(pygame.image.load('Resources/Images/PlayerShip6.PNG'), 200, False)
+ship1=pship(pygame.image.load('Resources/Images/PlayerShip1.PNG'), 0, True, 10, .5, 12)
+ship2=pship(pygame.image.load('Resources/Images/PlayerShip2.PNG'), 50, False, 15, .4, 14)
+ship3=pship(pygame.image.load('Resources/Images/PlayerShip3.PNG'), 125, False, 25, .3, 16)
+ship4=pship(pygame.image.load('Resources/Images/PlayerShip4.PNG'), 250, False, 40, .2, 18)
+ship5=pship(pygame.image.load('Resources/Images/PlayerShip5.PNG'), 500, False, 75, .15, 19)
+ship6=pship(pygame.image.load('Resources/Images/PlayerShip6.PNG'), 1000, False, 150, .1, 20)
+ship7=pship(pygame.image.load('Resources/Images/PlayerShip7.PNG'), 2500, False, 350, .05, 22)
 
-ships=[ship1,ship2,ship3,ship4,ship5,ship6]
+ships=[ship1,ship2,ship3,ship4,ship5,ship6,ship7]
 
 def No_perk(cx, cy):
-    global collateral, doublec, doubleh, perkselector
+    global collateral, doublec, doubleh, perkselector, curperk
     collateral = False
     doublec = 1
     doubleh = 100
     perkselector.centerx = cx
     perkselector.centery = cy
+    curperk = 0
 def perk1_init(cx,cy):
-    global collateral, doublec, doubleh, perkselector
+    global collateral, doublec, doubleh, perkselector, curperk
     collateral=True
     doublec=1
     doubleh=100
     perkselector.centerx=cx
     perkselector.centery=cy
+    curperk = 1
 def perk2_init(cx,cy):
-    global collateral, doublec, doubleh, perkselector
+    global collateral, doublec, doubleh, perkselector, curperk
     collateral=False
     doublec=1
     doubleh=200
     perkselector.centerx=cx
     perkselector.centery=cy
+    curperk = 2
 def perk3_init(cx,cy):
-    global collateral, doublec, doubleh, perkselector
+    global collateral, doublec, doubleh, perkselector, curperk
     collateral=False
     doublec=2
     doubleh=100
     perkselector.centerx=cx
     perkselector.centery=cy
+    curperk = 3
 
-noPerk=perks(pygame.image.load('Resources/Images/EmptyIcon.png'),No_perk,0,'No Perks')
-perk1=perks(pygame.image.load('Resources/Images/perk1.PNG'),perk1_init,3,'Bullets May Pass Through Multiple Targets')
-perk2=perks(pygame.image.load('Resources/Images/perk2.PNG'),perk2_init,5,'Double Health. Does not affect direct hits')
-perk3=perks(pygame.image.load('Resources/Images/perk3.PNG'),perk3_init,7,'Coins are worth twice as much')
+noPerk=perks(pygame.image.load('Resources/Images/EmptyIcon.png'),No_perk,0,'No Perks', 0)
+perk1=perks(pygame.image.load('Resources/Images/perk1.PNG'),perk1_init,3,'Bullets May Pass Through Multiple Targets', 1)
+perk2=perks(pygame.image.load('Resources/Images/perk2.PNG'),perk2_init,5,'Double Health. Does not affect direct hits', 2)
+perk3=perks(pygame.image.load('Resources/Images/perk3.PNG'),perk3_init,7,'Coins are worth twice as much', 3)
 
 allperks=[noPerk,perk1,perk2,perk3]
 
-collateral=False
-doubleh=100
-doublec=1
-
-perkselector=pygame.Rect((0,0,90,90))
-perkselector.centerx = width*(1.0/(len(allperks)+1))
-perkselector.centery = height*3/4
+perkselector = pygame.Rect(0,0,90,90)
 
 achv1=Achievement('Get ONE kill',None,None,None,None,None,1,None,5,10,'First Kill')
 achv2=Achievement('Kill One Boss',None,None,None,None,None,None,1,6,15,'First Boss Kill')
@@ -256,21 +273,34 @@ achv7=Achievement('Kill THIRTY enemies in one game on HARD without taking damage
 achv8=Achievement('Kill FOURTY enemies in one game on HARD without taking damage',40,100,None,None,3,None,None,30,200,'Killed 40 enemies on Hard without taking damage')
 achv9=Achievement('Kill ONE THOUSAND enemies',None,None,None,None,None,1000,None,30,500,'1,000th Kill')
 achv10=Achievement('Kill TEN THOUSAND enemies',None,None,None,None,None,10000,None,75,1000,'10,000th Kill')
+achv11=Achievement('Kill 25 Bosses',None,None,None,None,None,None,25,30,150,"25th Boss Kill")
+achv12=Achievement('Kill 100 Bosses',None,None,None,None,None,None,100,150,650,"100th Boss Kill")
+achv13=Achievement('Score 10,000 points on Easy',None,None,None,10000,1,None,None,15,45,"Scored 10,000 points on Easy")
+achv14=Achievement('Score 10,000 points on Medium',None,None,None,10000,2,None,None,25,60,"Scored 10,000 points on Medium")
+achv15=Achievement('Score 10,000 points on Hard',None,None,None,10000,3,None,None,45,90,"Scored 10,000 points on Hard")
 
-achievements = [achv1, achv2, achv3, achv4, achv5, achv6, achv7, achv8, achv9, achv10]
-global highscore
+achievements = [achv1, achv2, achv3, achv4, achv5, achv6, achv7, achv8, achv9, achv10, achv11, achv12, achv13, achv14, achv15]
+global highscore, curperk
 try:
     f=open('Saves/GDstats.pickle')
-    tbosskills, achv1.achieved, achv2.achieved, achv3.achieved, achv4.achieved, achv5.achieved, achv6.achieved, achv7.achieved, achv8.achieved, achv9.achieved, achv10.achieved, xp, totalkills, curship, coins, ship1.purchased, ship2.purchased, ship3.purchased, ship4.purchased, ship5.purchased, ship6.purchased, highscore = pickle.load(f)
+    sdamages, scooldowns, smovespeeds, curperk, tbosskills, achv1.achieved, achv2.achieved, achv3.achieved, achv4.achieved, achv5.achieved, achv6.achieved, achv7.achieved, achv8.achieved, achv9.achieved, achv10.achieved, achv11.achieved, achv12.achieved, achv13.achieved, achv14.achieved, achv15.achieved, xp, totalkills, curship, coins, ship1.purchased, ship2.purchased, ship3.purchased, ship4.purchased, ship5.purchased, ship6.purchased, ship7.purchased, highscore = pickle.load(f)
     f.close()
+    for i,x in enumerate(ships):
+        x.damage = sdamages[i]
+        x.cooldown = scooldowns[i]
+        x.movespeed = smovespeeds[i]
 except:
     print 'No previous stats'
+    print "Unexpected error:", sys.exc_info()[0]
     tbosskills = 0
     coins = 0
     curship = 0
     totalkills = 0
     xp = 0
     highscore = [0, 0, 0]
+    curperk = 0
+
+allperks[curperk].function(allperks[curperk].prect.centerx, allperks[curperk].prect.centery)
 
 enshipimg=pygame.image.load('Resources/Images/EnemyShip.PNG')
 enbugimg=pygame.image.load('Resources/Images/EnemyBug.PNG')
@@ -283,7 +313,7 @@ enspecks=pygame.transform.scale(enspecks,(100,100))
 expsmall=pygame.transform.scale(expsmall,(45,45))
 coinimg=pygame.image.load('Resources/Images/CoinImage.PNG')
 
-version=1
+version=2.1
 
 screen=pygame.display.set_mode((width, height))
 pygame.display.set_caption('Galaxy Defender V'+str(version))
@@ -291,6 +321,13 @@ pygame.display.set_caption('Galaxy Defender V'+str(version))
 background=pygame.Surface(screen.get_size())
 background=background.convert()
 background.fill(BLACK)
+
+backimg = pygame.image.load('Resources/Images/full-background.png')
+w, h = backimg.get_size()
+backimg = pygame.transform.scale(backimg, (width,int(h/(w/float(width)))))
+backw, backh = backimg.get_size()
+
+backheights = [height-backh, height-(backh*2), height-(backh*3)]
 
 def breaker():
     return True
@@ -332,37 +369,47 @@ class explosion():
                     screen.blit(expsmall,self.rect)
 
 class enemy():
-    def __init__(self, x, y, image, mhealth):
+    def __init__(self, x, y, image, mhealth, sway=True):
         self.x=x
-        self.rect=pygame.Rect(x-25,y-25,50,50)
         self.image=image
         self.rect = self.image.get_rect()
+        self.rect.centery = y
         self.active=True
         self.maxhealth = mhealth
         self.shealth = mhealth
+        self.sway = sway
     def draw(self):
-        global health, speed
+        global health, speed, kills, totalkills, score
         self.rect.centery+=speed
-        self.rect.centerx=self.x+(60*math.sin(self.rect.centery/50.0))
-        if self.rect.centery>height+25:
-            if self.active:
-                health-=10
-            enemies.pop()
-        if self.active==True:
-            if not self.maxhealth == self.shealth:
-                pygame.draw.rect(screen,(175,175,175),(self.rect.centerx - 30, self.rect.top - 20, 60, 6))
-                pygame.draw.rect(screen,RED,(self.rect.centerx - 30, self.rect.top - 20, 60 * (float(self.shealth)/float(self.maxhealth)), 6))
-            screen.blit(self.image,self.rect)
+        if self.sway:
+            self.rect.centerx=self.x+(60*math.sin(self.rect.centery/50.0))
+        else:
+            self.rect.centerx=self.x
+        if self.rect.bottom > 0:
+            if self.rect.centery>height:
+                if self.active:
+                    health-=10
+                enemies.remove(self)
+            if self.active==True:
+                if not self.maxhealth == self.shealth:
+                    pygame.draw.rect(screen,(175,175,175),(self.rect.centerx - 30, self.rect.top - 20, 60, 6))
+                    pygame.draw.rect(screen,RED,(self.rect.centerx - 30, self.rect.top - 20, 60 * (float(self.shealth)/float(self.maxhealth)), 6))
+                screen.blit(self.image,self.rect)
+            else:
+                enemies.remove(self)
+                kills += 1
+                totalkills += 1
+                score += 100
 
 class Boss():
-    def __init__(self):
+    def __init__(self, x):
         global difficulty
         self.img=bossimg
         self.rect=self.img.get_rect()
-        self.rect.centerx=width/2
+        self.rect.centerx=x
         self.y=float(-60)
         self.rect.centery=self.y
-        self.shealth=400*difficulty/2
+        self.shealth=(400*difficulty/2)+(score/10)
         self.health=self.shealth
         self.sheild=False
         self.shieldimg = pygame.transform.scale(shield,(self.rect.height + 25, self.rect.height + 25))
@@ -372,7 +419,7 @@ class Boss():
         for i in range(1,5):
             self.intervals.append(self.health*i/5)
     def draw(self):
-        global multiplier,score,xp,tbosskills,gameover
+        global multiplier,score,xp,tbosskills,gameover,enhealth,spawnTimer
         self.y+=.7
         self.rect.centery=self.y
         if self.check_intervals() and not self.sheild:
@@ -382,8 +429,8 @@ class Boss():
             self.sheilds=[Boss_sheild(a,0),Boss_sheild(a+(6.28/4),1),Boss_sheild(a+3.14,2),Boss_sheild(a-(3.14/2),3)]
             enhealth = score / 1000
             enhealth = (enhealth + 1) * 10
-            enemies.insert(0,enemy(width/4,-30, enemyimgs[rand(0,len(enemyimgs)-1)], enhealth))
-            enemies.insert(0,enemy(width*3/4,-30, enemyimgs[rand(0,len(enemyimgs)-1)], enhealth))
+            enemies.insert(0,enemy(self.rect.right + 100, -30, enemyimgs[rand(0,len(enemyimgs)-1)], enhealth))
+            enemies.insert(0,enemy(self.rect.left - 100, -30, enemyimgs[rand(0,len(enemyimgs)-1)], enhealth))
         if self.sheilds:
             self.shieldrect.centerx = self.rect.centerx
             self.shieldrect.centery = self.rect.centery - 5
@@ -393,16 +440,33 @@ class Boss():
         else:
             self.sheild=False
         if self.health<=0:
-            bosses.pop()
+            bosses.remove(self)
             score+=500
             xp+=30*multiplier
             tbosskills+=1
+            x = rand(1,2)
+            if x == 1:
+                enemies.insert(0, enemy(width / 2, -50, enemyimgs[0], enhealth, False))
+                for i in range(1,5):
+                    x = 50*i
+                    enemies.insert(0,enemy(width/2-x,-1*(50+x),enemyimgs[0],enhealth, False))
+                    enemies.insert(0,enemy(width/2+x,-1*(50+x),enemyimgs[0],enhealth, False))
+            elif x == 2:
+                for i in range(1,5):
+                    enemies.insert(0,enemy(width/2,-50*i,enemyimgs[1],enhealth,False))
+                    for x in range(1,3):
+                        enemies.insert(0,enemy(width/2 + (50*x), -50*i, enemyimgs[1],enhealth,False))
+                        enemies.insert(0,enemy(width/2 - (50*x), -50*i, enemyimgs[1],enhealth,False))
+            spawnTimer = timeit.default_timer() +  5
+            for i in range(0,2+int(score/3000)):
+                coinslist.insert(0,coinob(-1*rand(15, 115),rand(0,height*3/5)))
+
         thr=pygame.Rect(self.rect.left,self.rect.top-5, self.rect.width,10)
         hr=pygame.Rect(self.rect.left,self.rect.top-5,(self.rect.width*self.health/self.shealth),10)
         pygame.draw.rect(screen,(100,100,100),thr)
         pygame.draw.rect(screen,GREEN,hr)
         screen.blit(self.img,self.rect)
-        if self.rect.centerx > height:
+        if self.rect.centery > height:
             gameover = True
     def check_intervals(self):
         for i in self.intervals:
@@ -417,7 +481,7 @@ class Boss_sheild():
         self.radius=10
         self.rect=pygame.Rect(1000,1000,self.radius*2,self.radius*2)
     def draw(self,Bx,By):
-        self.deg+=0.08
+        self.deg+=0.07
         self.x=Bx+(100*(math.cos(float(self.deg))))
         self.y=By+(100*(math.sin(float(self.deg))))
         self.rect.centerx=self.x
@@ -444,11 +508,11 @@ class playerbullet():
         self.rect=pygame.Rect(x-5,y-15,10,30)
         self.active=True
         self.hits=0
-        self.speed = 20
+        self.speed = 25
         self.hitenemies = []
-        self.damage = 10
+        self.damage = ships[curship].damage
     def run(self):
-        global spawnrate, score, coins,kills,totalkills
+        global spawnrate, score, coins, kills, totalkills
         self.rect.centery-=self.speed
         if self.active:
             pygame.draw.rect(screen,(255,255,255),self.rect)
@@ -456,9 +520,11 @@ class playerbullet():
                 if not i in self.hitenemies:
                     if self.rect.colliderect(i.rect) and i.active:
                         if not collateral:
-                            self.active=False
+                            self.active = False
                         else:
                             self.hitenemies.append(i)
+                            if len(self.hitenemies)>=2:
+                                self.active = False
                         i.shealth -= self.damage
                         if i.shealth<=0:
                             i.active=False
@@ -466,10 +532,7 @@ class playerbullet():
                         spawnrate=spawnrate*.95
                         if spawnrate<.3:
                             spawnrate=.15
-                        score+=100
-                        kills+=1
                         self.hits+=1
-                        totalkills+=1
             for i in coinslist:
                 if self.rect.colliderect(i.rect) and i.active:
                     if not collateral:
@@ -487,7 +550,7 @@ class playerbullet():
                 if self.rect.colliderect(i.rect):
                     self.active=False
                     if not i.sheild:
-                        i.health-=20
+                        i.health-=self.damage
                         
         if self.rect.centery<=-15:
             pbullets.pop()
@@ -499,11 +562,15 @@ class player():
         self.rect=self.image.get_rect()
         self.rect.centerx=x
         self.rect.centery=y
+        self.basey = y
         self.shootvar=True
-        self.speed = 17
+        self.speed = ships[curship].movespeed
+        self.cooldown = ships[curship].cooldown
+        self.shoottimer = 0
     def draw(self):
         global gameover
         k=pygame.key.get_pressed()
+        self.rect.centery = self.basey +(math.sin(timeit.default_timer()*5)*2)
         if k[pygame.K_RIGHT]:
             self.rect.centerx+=self.speed*plPref.sens/100
         if self.rect.centerx>width-30:
@@ -513,12 +580,10 @@ class player():
         if self.rect.centerx<30:
             self.rect.centerx=30
         if k[pygame.K_SPACE]:
-            if self.shootvar:
-                self.shootvar=False
+            if self.shoottimer<timeit.default_timer():
+                self.shoottimer=timeit.default_timer() + self.cooldown
                 sound.play()
                 pbullets.insert(0,playerbullet(self.rect.centerx,self.rect.centery-30))
-        else:
-            self.shootvar=True
         screen.blit(self.image,self.rect)
         for i in enemies:
             if self.rect.colliderect(i.rect) and i.active:
@@ -535,7 +600,7 @@ def spawnEnemies():
     if spawnrate<.6:
         spawnrate = .6
     enhealth = score/1000
-    enhealth = (enhealth + 1) * 10
+    enhealth = (enhealth + difficulty) * 10
     if timeit.default_timer()-spawnTimer>0:
         enemies.insert(0,enemy(rand(60, width-60),-50, enemyimgs[rand(0,len(enemyimgs)-1)], enhealth))
         spawnTimer=timeit.default_timer()+spawnrate
@@ -544,7 +609,7 @@ def spawnCoins():
     global cspawnTimer, coinslist
     if timeit.default_timer()-cspawnTimer>0:
         coinslist.insert(0,coinob(-20,rand(0,height/2)))
-        cspawnTimer=timeit.default_timer()+rand(7,15)
+        cspawnTimer=timeit.default_timer()+rand(5,12)
 
 def Results():
     global kills, newcoins, score, totalkills, xp, multiplier, highscore
@@ -578,10 +643,13 @@ def Results():
     ktp.centery=height/2+75
     screen.blit(kt,ktp)
     contb=ButtonMod.button(width-120,height-50,None,'Continue',60,BLACK,YELLOW, breaker, screen, pygame)
+    clickvar = False
     while True:
         x=contb.draw()
-        if x:
+        if x and clickvar:
             break
+        elif not pygame.mouse.get_pressed()[0]:
+            clickvar = True
         for event in pygame.event.get():
             if event.type==QUIT:
                 save()
@@ -608,13 +676,16 @@ def draw_score():
     stp.top=20
     ctp.top=20
     screen.blit(background,(0,0))
+    for i in backheights:
+        screen.blit(backimg, (0, i))
     screen.blit(coinsicon,cirect)
     screen.blit(st,stp)
     screen.blit(ct,ctp)
 
 def Paused():
-    global escVar
+    global escVar, gameover
     escVar = False
+    breaker = False
     while True:
         draw_score()
 
@@ -669,7 +740,27 @@ def Paused():
                             quit()
                 plPref.sens = (sliderect.centerx - 30)/2
 
+        qt = font.render("Quit Game",1,GREEN)
+        qtp = qt.get_rect()
+        qtp.right = width - 30
+        qtp.bottom = height - 30
+        qtb = pygame.Rect(0,0,0,0)
+        qtb.width = qtp.width + 10
+        qtb.height = qtp.height + 10
+        qtb.centerx = qtp.centerx
+        qtb.centery = qtp.centery
+        if qtb.collidepoint(pygame.mouse.get_pos()):
+            pygame.draw.rect(screen,(100,0,0),qtb)
+            if pygame.mouse.get_pressed()[0]:
+                gameover = True
+                breaker = True
+
+        screen.blit(qt,qtp)
+
         pygame.display.flip()
+
+        if breaker:
+            break
 
         for i in pygame.event.get():
             if i.type == QUIT:
@@ -698,6 +789,10 @@ def Play():
     cirect.left=10
     escVar = False
     while True:
+        for i in range(0, len(backheights)):
+            backheights[i]+=3
+            if backheights[i] > height:
+                backheights[i] -= backh*len(backheights)
         draw_score()
         player1.draw()
         spawnEnemies()
@@ -719,6 +814,10 @@ def Play():
 
         if score in [1500,5000,10000,20000,30000,40000,50000,60000,70000,80000,90000,100000]:
             while enemies:
+                for i in range(0, len(backheights)):
+                    backheights[i] += 3
+                    if backheights[i] > height:
+                        backheights[i] -= backh * len(backheights)
                 draw_score()
                 player1.draw()
                 for i in coinslist:
@@ -730,6 +829,11 @@ def Play():
                 for i in explosions:
                     i.draw()
                 health_bar()
+                k = pygame.key.get_pressed()
+                if k[K_ESCAPE] and escVar:
+                    Paused()
+                elif not k[K_ESCAPE]:
+                    escVar = True
                 for event in pygame.event.get():
                     if event.type==QUIT:
                         pygame.display.quit()
@@ -739,13 +843,20 @@ def Play():
                 clock.tick(33)
 
                 if gameover:
+                    GOsound.play()
                     break
                 for i in achievements:
                     if not i.achieved:
                         i.check()
-
-            bosses=[Boss()]
+            if score > 7500:
+                bosses=[Boss(width/3),Boss(width*2/3)]
+            else:
+                bosses=[Boss(width/2)]
             while bosses:
+                for i in range(0, len(backheights)):
+                    backheights[i] += 3
+                    if backheights[i] > height:
+                        backheights[i] -= backh * len(backheights)
                 draw_score()
                 player1.draw()
                 for i in pbullets:
@@ -756,6 +867,8 @@ def Play():
                     i.draw()
                 for i in explosions:
                     i.draw()
+                for i in coinslist:
+                    i.draw()
                 health_bar()
                 for i in achievements:
                     if not i.achieved:
@@ -763,6 +876,12 @@ def Play():
                 for i in achievements:
                     if not i.achieved:
                         i.check()
+
+                k = pygame.key.get_pressed()
+                if k[K_ESCAPE] and escVar:
+                    Paused()
+                elif not k[K_ESCAPE]:
+                    escVar = True
 
                 for event in pygame.event.get():
                     if event.type==QUIT:
@@ -773,6 +892,7 @@ def Play():
                 clock.tick(33)
 
                 if gameover:
+                    GOsound.play()
                     break
 
         health_bar()
@@ -790,6 +910,7 @@ def Play():
         clock.tick(33)
 
         if gameover:
+            GOsound.play()
             break
     Results()
 
@@ -813,6 +934,8 @@ def shop():
     cirect.top=20
     cirect.left=width-150
     bbut=ButtonMod.button(width-70,height-50,None,'Back',50,BLACK,YELLOW,breaker,screen,pygame)
+    shipselect = None
+    cvar = False
     while True:
         font=pygame.font.Font(None,60)
         ct=font.render(str(coins),1,YELLOW)
@@ -822,9 +945,14 @@ def shop():
         screen.blit(background,(0,0))
         draw_Rank()
         st=font.render('Ships',1,WHITE)
+        plt=font.render("Perks",1,WHITE)
         stp=st.get_rect()
-        stp.centerx=75
+        stp.left=25
         stp.centery=50
+        pltp = plt.get_rect()
+        pltp.left = 25
+        pltp.centery = height*3/5
+        screen.blit(plt,pltp)
         screen.blit(coinsicon,cirect)
         screen.blit(ct,ctp)
         screen.blit(st,stp)
@@ -833,6 +961,80 @@ def shop():
             break
         for i,x in enumerate(ships):
             x.draw(i)
+            if x.srect.collidepoint(pygame.mouse.get_pos()):
+                shipselect = x
+        if shipselect:
+            arect = arrow.get_rect()
+            arect.centerx = shipselect.srect.centerx
+            arect.top = shipselect.srect.bottom
+            screen.blit(arrow,arect)
+            font = pygame.font.Font(None,35)
+            dt = font.render("Damage: "+str(shipselect.damage),1,(RED))
+            dtp = dt.get_rect()
+            dtp.centerx = width/4
+            dtp.centery = height*2/5
+            screen.blit(dt,dtp)
+            if shipselect.purchased:
+                dut = font.render("UPGRADE",1,(RED))
+                dutp = dut.get_rect()
+                dutp.centerx = width/4
+                dutp.centery = height/2-10
+                pygame.draw.rect(screen,GREEN,dutp)
+                screen.blit(dut,dutp)
+                if dutp.collidepoint(pygame.mouse.get_pos()):
+                    ut = font.render("+2 Damage   Cost: " + str(int(shipselect.damage * 1.2)),1,YELLOW)
+                    utp = ut.get_rect()
+                    utp.centerx = width/2
+                    utp.centery = dutp.centery + 30
+                    screen.blit(ut, utp)
+                    if pygame.mouse.get_pressed()[0] and coins >= int(shipselect.damage*1.2) and not cvar:
+                        cvar = True
+                        coins -= int(shipselect.damage*1.2)
+                        shipselect.damage += 2
+            ct = font.render("Cooldown: "+str(round(shipselect.cooldown,3)),1,(RED))
+            ctp = ct.get_rect()
+            ctp.centerx = width/2
+            ctp.centery = height*2/5
+            screen.blit(ct,ctp)
+            if shipselect.purchased:
+                cut = font.render("UPGRADE",1,(RED))
+                cutp = dut.get_rect()
+                cutp.centerx = width/2
+                cutp.centery = height/2-10
+                pygame.draw.rect(screen,GREEN,cutp)
+                screen.blit(cut,cutp)
+                if cutp.collidepoint(pygame.mouse.get_pos()):
+                    ut = font.render("15% Reduction   Cost: " + str(int(100 - ((float(shipselect.cooldown)/.57)*100))),1,YELLOW)
+                    utp = ut.get_rect()
+                    utp.centerx = width/2
+                    utp.centery = dutp.centery + 30
+                    screen.blit(ut, utp)
+                    if pygame.mouse.get_pressed()[0] and coins >= int(100 - ((float(shipselect.cooldown)/.57)*100)) and not cvar:
+                        cvar = True
+                        coins -= int(100 - ((float(shipselect.cooldown)/.57)*100))
+                        shipselect.cooldown = shipselect.cooldown * .85
+            mt = font.render("Speed:"+str(shipselect.movespeed),1,(RED))
+            mtp = mt.get_rect()
+            mtp.centerx = width*3/4
+            mtp.centery = height*2/5
+            screen.blit(mt,mtp)
+            if shipselect.purchased:
+                mut = font.render("UPGRADE",1,(RED))
+                mutp = dut.get_rect()
+                mutp.centerx = width*3/4
+                mutp.centery = height/2-10
+                pygame.draw.rect(screen,GREEN,mutp)
+                screen.blit(mut,mutp)
+                if mutp.collidepoint(pygame.mouse.get_pos()):
+                    ut = font.render("+1 Movement   Cost: " + str(int(shipselect.movespeed * 1.3)),1,YELLOW)
+                    utp = ut.get_rect()
+                    utp.centerx = width/2
+                    utp.centery = dutp.centery + 30
+                    screen.blit(ut, utp)
+                    if pygame.mouse.get_pressed()[0] and coins >= int(shipselect.movespeed*1.3) and not cvar:
+                        cvar = True
+                        coins -= int(shipselect.movespeed*1.3)
+                        shipselect.movespeed += 1
         pygame.draw.rect(screen,(100,0,0),perkselector)
         for i,x in enumerate(allperks):
             x.draw(i)
@@ -842,6 +1044,8 @@ def shop():
                 pygame.display.quit()
                 sys.exit()
         pygame.display.flip()
+        if cvar and not pygame.mouse.get_pressed()[0]:
+            cvar = False
 
 def Achv_Menu():
     yshift=0
@@ -911,6 +1115,44 @@ def Stats_Menu():
     screen.blit(tk,tkp)
     screen.blit(tbkt,tbktp)
     screen.blit(tbk,tbkp)
+    font = pygame.font.Font(None,50)
+    hst = font.render("HIGHSCORES",1,PURPLE)
+    hstp = hst.get_rect()
+    hstp.top = 15
+    hstp.left = 15
+    screen.blit(hst,hstp)
+    pygame.draw.line(screen,PURPLE,(hstp.left-5,hstp.bottom+5),(hstp.right+5,hstp.bottom +5),3)
+    font = pygame.font.Font(None,35)
+    et = font.render("EASY: ",1, GREEN)
+    est = font.render(str(highscore[0]),1,BLUE)
+    mt = font.render("MEDIUM: ",1, YELLOW)
+    mst = font.render(str(highscore[1]),1,BLUE)
+    ht = font.render("HARD: ",1,RED)
+    hdst = font.render(str(highscore[2]),1,BLUE)
+    etp = et.get_rect()
+    etp.left = 15
+    etp.top = hstp.bottom + 12
+    screen.blit(et,etp)
+    estp = est.get_rect()
+    estp.left = etp.right
+    estp.top = etp.top
+    screen.blit(est,estp)
+    mtp = mt.get_rect()
+    mtp.top = etp.bottom + 5
+    mtp.left = 15
+    screen.blit(mt,mtp)
+    mstp = mst.get_rect()
+    mstp.top = mtp.top
+    mstp.left = mtp.right
+    screen.blit(mst,mstp)
+    htp = ht.get_rect()
+    htp.top = mtp.bottom + 5
+    htp.left = 15
+    screen.blit(ht,htp)
+    hdstp = hdst.get_rect()
+    hdstp.top = htp.top
+    hdstp.left = htp.right
+    screen.blit(hdst,hdstp)
     while True:
         x=bbut.draw()
         if x:
@@ -925,7 +1167,14 @@ def Stats_Menu():
 def save():
     global coins
     f=open('Saves/GDstats.pickle','w')
-    pickle.dump([tbosskills,achv1.achieved,achv2.achieved,achv3.achieved,achv4.achieved,achv5.achieved,achv6.achieved,achv7.achieved,achv8.achieved,achv9.achieved,achv10.achieved,xp,totalkills,curship,coins,ship1.purchased,ship2.purchased,ship3.purchased,ship4.purchased,ship5.purchased,ship6.purchased, highscore], f)
+    sdamages = []
+    scooldowns = []
+    smovespeeds = []
+    for i in ships:
+        sdamages.append(i.damage)
+        scooldowns.append(i.cooldown)
+        smovespeeds.append(i.movespeed)
+    pickle.dump([sdamages,scooldowns,smovespeeds,curperk,tbosskills,achv1.achieved,achv2.achieved,achv3.achieved,achv4.achieved,achv5.achieved,achv6.achieved,achv7.achieved,achv8.achieved,achv9.achieved,achv10.achieved,achv11.achieved,achv12.achieved,achv13.achieved,achv14.achieved,achv15.achieved,xp,totalkills,curship,coins,ship1.purchased,ship2.purchased,ship3.purchased,ship4.purchased,ship5.purchased,ship6.purchased, ship7.purchased, highscore], f)
     f.close()
 
 def seteasy():
@@ -975,6 +1224,7 @@ def difficultymenu():
         
 
 def MainMenu():
+    breakit = False
     playb=ButtonMod.button(width/2,120, "droidserif",'PLAY',75,BLACK,WHITE,difficultymenu,screen,pygame)
     shopb=ButtonMod.button(width/2,250, "droidserif",'SHOP',60,BLACK,WHITE,shop,screen,pygame)
     achvb=ButtonMod.button(width/2,380, "droidserif",'Achievements',60,BLACK,WHITE,Achv_Menu,screen,pygame)
@@ -989,8 +1239,10 @@ def MainMenu():
         for event in pygame.event.get():
             if event.type==QUIT:
                 save()
-                pygame.display.quit()
-                sys.exit()
+                breakit = True
+
+        if breakit:
+            break
 
         pygame.display.flip()
 
