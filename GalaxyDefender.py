@@ -76,7 +76,7 @@ class pship():
 
 class perks():
     def __init__(self, icon, function, reqrank, description, x):
-        font=pygame.font.Font(None,50)
+        font=pygame.font.Font(None,35)
         self.icon=pygame.transform.scale(icon,(75,75))
         self.function=function
         self.reqrank=reqrank
@@ -212,12 +212,12 @@ class Achievement():
         
 
 ship1=pship(pygame.image.load('Resources/Images/PlayerShip1.PNG'), 0, True, 10, .5, 12)
-ship2=pship(pygame.image.load('Resources/Images/PlayerShip2.PNG'), 50, False, 15, .4, 14)
-ship3=pship(pygame.image.load('Resources/Images/PlayerShip3.PNG'), 125, False, 25, .3, 16)
-ship4=pship(pygame.image.load('Resources/Images/PlayerShip4.PNG'), 250, False, 40, .2, 18)
-ship5=pship(pygame.image.load('Resources/Images/PlayerShip5.PNG'), 500, False, 75, .15, 19)
-ship6=pship(pygame.image.load('Resources/Images/PlayerShip6.PNG'), 1000, False, 150, .1, 20)
-ship7=pship(pygame.image.load('Resources/Images/PlayerShip7.PNG'), 2500, False, 350, .05, 22)
+ship2=pship(pygame.image.load('Resources/Images/PlayerShip2.PNG'), 60, False, 20, .38, 14)
+ship3=pship(pygame.image.load('Resources/Images/PlayerShip3.PNG'), 140, False, 40, .3, 16)
+ship4=pship(pygame.image.load('Resources/Images/PlayerShip4.PNG'), 300, False, 80, .21, 18)
+ship5=pship(pygame.image.load('Resources/Images/PlayerShip5.PNG'), 650, False, 150, .15, 20)
+ship6=pship(pygame.image.load('Resources/Images/PlayerShip6.PNG'), 1200, False, 250, .1, 22)
+ship7=pship(pygame.image.load('Resources/Images/PlayerShip7.PNG'), 3000, False, 400, .06, 24)
 
 ships=[ship1,ship2,ship3,ship4,ship5,ship6,ship7]
 
@@ -255,7 +255,7 @@ def perk3_init(cx,cy):
     curperk = 3
 
 noPerk=perks(pygame.image.load('Resources/Images/EmptyIcon.png'),No_perk,0,'No Perks', 0)
-perk1=perks(pygame.image.load('Resources/Images/perk1.PNG'),perk1_init,3,'Bullets May Pass Through Multiple Targets', 1)
+perk1=perks(pygame.image.load('Resources/Images/perk1.PNG'),perk1_init,3,'Bullets May Pass Through Up To 2 Targets', 1)
 perk2=perks(pygame.image.load('Resources/Images/perk2.PNG'),perk2_init,5,'Double Health. Does not affect direct hits', 2)
 perk3=perks(pygame.image.load('Resources/Images/perk3.PNG'),perk3_init,7,'Coins are worth twice as much', 3)
 
@@ -313,7 +313,7 @@ enspecks=pygame.transform.scale(enspecks,(100,100))
 expsmall=pygame.transform.scale(expsmall,(45,45))
 coinimg=pygame.image.load('Resources/Images/CoinImage.PNG')
 
-version=3.0
+version=3.1
 
 screen=pygame.display.set_mode((width, height))
 pygame.display.set_caption('Galaxy Defender V'+str(version))
@@ -501,7 +501,7 @@ class coinob():
         if self.active:
             screen.blit(self.img,self.rect)
         if self.rect.centerx>width+20:
-            coinslist.pop()
+            coinslist.remove(self)
 
 class playerbullet():
     def __init__(self,x,y):
@@ -812,7 +812,7 @@ def Play():
         elif not k[K_ESCAPE]:
             escVar = True
 
-        if score in [1500,5000,10000,20000,30000,40000,50000,60000,70000,80000,90000,100000]:
+        if score in [1500,5000] or score/10000.0 == int(score/10000) and score > 1:
             while enemies:
                 for i in range(0, len(backheights)):
                     backheights[i] += 3
@@ -982,15 +982,15 @@ def shop():
                 pygame.draw.rect(screen,GREEN,dutp)
                 screen.blit(dut,dutp)
                 if dutp.collidepoint(pygame.mouse.get_pos()):
-                    ut = font.render("+2 Damage   Cost: " + str(int(shipselect.damage * 1.2)),1,YELLOW)
+                    ut = font.render("+"+str(int(shipselect.damage**.3011))+" Damage   Cost: " + str(int(shipselect.damage ** 1.1)),1,YELLOW)
                     utp = ut.get_rect()
                     utp.centerx = width/2
                     utp.centery = dutp.centery + 30
                     screen.blit(ut, utp)
-                    if pygame.mouse.get_pressed()[0] and coins >= int(shipselect.damage*1.2) and not cvar:
+                    if pygame.mouse.get_pressed()[0] and coins >= int(shipselect.damage ** 1.1) and not cvar:
                         cvar = True
-                        coins -= int(shipselect.damage*1.2)
-                        shipselect.damage += 2
+                        coins -= int(shipselect.damage ** .6)
+                        shipselect.damage += int(shipselect.damage**.3011)
             ct = font.render("Cooldown: "+str(round(shipselect.cooldown,3)),1,(RED))
             ctp = ct.get_rect()
             ctp.centerx = width/2
@@ -1004,15 +1004,15 @@ def shop():
                 pygame.draw.rect(screen,GREEN,cutp)
                 screen.blit(cut,cutp)
                 if cutp.collidepoint(pygame.mouse.get_pos()):
-                    ut = font.render("15% Reduction   Cost: " + str(int(100 - ((float(shipselect.cooldown)/.57)*100))),1,YELLOW)
+                    ut = font.render("10% Reduction   Cost: " + str(int((math.log((float(shipselect.cooldown)/.57),.1)*200))),1,YELLOW)
                     utp = ut.get_rect()
                     utp.centerx = width/2
                     utp.centery = dutp.centery + 30
                     screen.blit(ut, utp)
-                    if pygame.mouse.get_pressed()[0] and coins >= int(100 - ((float(shipselect.cooldown)/.57)*100)) and not cvar:
+                    if pygame.mouse.get_pressed()[0] and coins >= int((math.log((float(shipselect.cooldown)/.57),.1)*200)) and not cvar:
                         cvar = True
-                        coins -= int(100 - ((float(shipselect.cooldown)/.57)*100))
-                        shipselect.cooldown = shipselect.cooldown * .85
+                        coins -= int((math.log((float(shipselect.cooldown)/.57),.1)*200))
+                        shipselect.cooldown = shipselect.cooldown * .9
             mt = font.render("Speed:"+str(shipselect.movespeed),1,(RED))
             mtp = mt.get_rect()
             mtp.centerx = width*3/4
@@ -1026,14 +1026,14 @@ def shop():
                 pygame.draw.rect(screen,GREEN,mutp)
                 screen.blit(mut,mutp)
                 if mutp.collidepoint(pygame.mouse.get_pos()):
-                    ut = font.render("+1 Movement   Cost: " + str(int(shipselect.movespeed * 1.3)),1,YELLOW)
+                    ut = font.render("+1 Movement   Cost: " + str(int(shipselect.movespeed ** 1.3)+int(shipselect.movespeed/2)-20),1,YELLOW)
                     utp = ut.get_rect()
                     utp.centerx = width/2
                     utp.centery = dutp.centery + 30
                     screen.blit(ut, utp)
-                    if pygame.mouse.get_pressed()[0] and coins >= int(shipselect.movespeed*1.3) and not cvar:
+                    if pygame.mouse.get_pressed()[0] and coins >= int(shipselect.movespeed ** 1.3)+int(shipselect.movespeed/2)-20 and not cvar:
                         cvar = True
-                        coins -= int(shipselect.movespeed*1.3)
+                        coins -= int(shipselect.movespeed ** 1.3)+int(shipselect.movespeed/2)-20
                         shipselect.movespeed += 1
         pygame.draw.rect(screen,(100,0,0),perkselector)
         for i,x in enumerate(allperks):
